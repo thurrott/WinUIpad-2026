@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WinUIpad">
+
+    <Style TargetType="TextBox">
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+        <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+        <!-- TextControlBackground -->
+        <Setter Property="BorderBrush" Value="{ThemeResource ControlFillColorTransparentBrush}" />
+        <Setter Property="Opacity" Value="1" />
+    </Style>
+
+</ResourceDictionary>

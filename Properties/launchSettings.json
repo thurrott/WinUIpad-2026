@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "WinUIpad (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "WinUIpad (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
