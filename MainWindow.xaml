@@ -63,10 +63,14 @@
                             </MenuFlyoutItem.KeyboardAccelerators>
                         </MenuFlyoutItem>
                         <MenuFlyoutSeparator />
-                        <MenuFlyoutItem Name="PageSetupMenu" Text="Page setup" />
-                        <MenuFlyoutItem Name="PrintMenu" Text="Print" />
+                        <MenuFlyoutItem Name="PageSetupMenu" Text="Page setup" Click="PageSetupMenu_Click" />
+                        <MenuFlyoutItem Name="PrintMenu" Text="Print" Click="PrintMenu_Click">
+                            <MenuFlyoutItem.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="P" Modifiers="Control"/>
+                            </MenuFlyoutItem.KeyboardAccelerators>
+                        </MenuFlyoutItem>
                         <MenuFlyoutSeparator />
-                        <MenuFlyoutItem Name="ExitMenu" Text="Exit" />
+                        <MenuFlyoutItem Name="ExitMenu" Text="Exit" Click="ExitMenu_Click" />
                     </MenuBarItem>
                     <MenuBarItem Title="Edit">
                         <MenuFlyoutItem Name="UndoMenu" Text="Undo" Icon="Undo" Click="UndoMenu_Click">
@@ -138,6 +142,23 @@
                         <MenuFlyoutItem Name="FontMenu" Text="Font" Click="FontMenu_Click"/>
                     </MenuBarItem>
                     <MenuBarItem Title="View">
+                        <MenuFlyoutSubItem Name="ZoomMenu" Text="Zoom">
+                            <MenuFlyoutItem Name="ZoomInMenu" Text="Zoom in" Click="ZoomInMenu_Click">
+                                <MenuFlyoutItem.KeyboardAccelerators>
+                                    <KeyboardAccelerator Key="Add" Modifiers="Control"/>
+                                </MenuFlyoutItem.KeyboardAccelerators>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem Name="ZoomOutMenu" Text="Zoom out" Click="ZoomOutMenu_Click">
+                                <MenuFlyoutItem.KeyboardAccelerators>
+                                    <KeyboardAccelerator Key="Subtract" Modifiers="Control"/>
+                                </MenuFlyoutItem.KeyboardAccelerators>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem Name="RestoreDefaultZoomMenu" Text="Restore default zoom" Click="RestoreDefaultZoomMenu_Click">
+                                <MenuFlyoutItem.KeyboardAccelerators>
+                                    <KeyboardAccelerator Key="Number0" Modifiers="Control"/>
+                                </MenuFlyoutItem.KeyboardAccelerators>
+                            </MenuFlyoutItem>
+                        </MenuFlyoutSubItem>
                         <ToggleMenuFlyoutItem Name="StatusBarMenu" Text="Status bar" Click="StatusBarMenu_Click" />
                         <ToggleMenuFlyoutItem Name="WordWrapMenu" Text="Word wrap" Click="WordWrapMenu_Click" />
                     </MenuBarItem>
@@ -276,7 +297,7 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Family" Style="{StaticResource BodyTextBlockStyle}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="-15,5,10,0" />
                                     <ComboBox Grid.Row="0" Grid.Column="1" Name="FontFamilyComboBox" Width="200" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,-15,0"
-                                              ItemsSource="{Binding}" />
+                                              ItemsSource="{Binding}" SelectionChanged="FontFamilyComboBox_SelectionChanged"  />
                                 </Grid>
                                 <Grid Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" Padding="15" Margin="40,-15,40,15" BorderThickness="0,0,0,1" BorderBrush="{StaticResource ControlElevationBorderBrush}">
                                     <Grid.RowDefinitions>
@@ -288,7 +309,7 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Style" Style="{StaticResource BodyTextBlockStyle}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="-15,5,10,0" />
                                     <ComboBox Name="FontStyleComboBox" Grid.Row="0" Grid.Column="1" PlaceholderText="Pick a font style" Width="200" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,-15,0" 
-                                              ItemsSource="{Binding}" />
+                                              ItemsSource="{Binding}" SelectionChanged="FontStyleComboBox_SelectionChanged" />
                                 </Grid>
                                 <Grid Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" Padding="15" Margin="40,-15,40,-15"  BorderThickness="0,0,0,1" BorderBrush="{StaticResource ControlElevationBorderBrush}">
                                     <Grid.RowDefinitions>
@@ -300,7 +321,7 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Size" Style="{StaticResource BodyTextBlockStyle}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="-15,5,10,0" />
                                     <ComboBox Name="FontSizeComboBox" Grid.Row="0" Grid.Column="1" PlaceholderText="Pick a font size" Width="200" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,-15,0"
-                                              ItemsSource="{Binding}" />
+                                              ItemsSource="{Binding}" SelectionChanged="FontSizeComboBox_SelectionChanged" />
                                 </Grid>
                                 <Grid Grid.Row="3" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="15" Margin="40,20,40,0" >
                                     <Grid.RowDefinitions>

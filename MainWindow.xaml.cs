@@ -82,7 +82,7 @@ namespace WinUIpad
             appSettings.LoadStatusBarSettings(StatusbarGrid, StatusBarMenu, StatusBarToggle);
         }
 
-        private void Font_Configuration()
+        private async void Font_Configuration()
         {
             appSettings.LoadFontSettings(out fontName, out fontSize, out fontItalic, out fontBold);
 
@@ -155,7 +155,7 @@ namespace WinUIpad
         {
             appSettings.SaveWindowSettings(appWindow);
             appSettings.SaveThemeSettings(ThemeRadioButtons);
-            appSettings.SaveFontSettings();
+            appSettings.SaveFontSettings(TextBox1);
             appSettings.SaveWordWrapSettings(TextBox1.TextWrapping);
             appSettings.SaveStatusBarSettings(StatusbarGrid.Visibility);
         }
@@ -163,7 +163,6 @@ namespace WinUIpad
         //
         // File menu event handlers
         //
-
         private async void FileOpMenu_Click(object sender, RoutedEventArgs e)
         {
             // This is for File > New and File > Open
@@ -221,6 +220,21 @@ namespace WinUIpad
                 var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
                 await fo.SaveAsDocument(hwnd, doc);
             }
+        }
+
+        private void PageSetupMenu_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void PrintMenu_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void ExitMenu_Click(object sender, RoutedEventArgs e)
+        {
+            // State check before close
         }
 
         //
@@ -451,6 +465,21 @@ namespace WinUIpad
         // View menu event handlers
         //
 
+        private void ZoomInMenu_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void ZoomOutMenu_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void RestoreDefaultZoomMenu_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
         private void StatusBarMenu_Click(object sender, RoutedEventArgs e)
         {
             if (StatusbarGrid.Visibility == Visibility.Visible)
@@ -468,15 +497,6 @@ namespace WinUIpad
             Settings.Default.Save();
         }
 
-        //
-        // Text box event handlers
-        //
-
-        private void TextBox1_TextChanging(Microsoft.UI.Xaml.Controls.TextBox sender, Microsoft.UI.Xaml.Controls.TextBoxTextChangingEventArgs args)
-        {
-
-        }
-
         private void WordWrapMenu_Click(object sender, RoutedEventArgs e)
         {
             if (TextBox1.TextWrapping == TextWrapping.Wrap)
@@ -492,6 +512,16 @@ namespace WinUIpad
                 Settings.Default.WordWrap = true;
             }
             Settings.Default.Save();
+        }
+
+
+        //
+        // Text box event handlers
+        //
+
+        private void TextBox1_TextChanging(Microsoft.UI.Xaml.Controls.TextBox sender, Microsoft.UI.Xaml.Controls.TextBoxTextChangingEventArgs args)
+        {
+                
         }
 
         //
@@ -528,6 +558,11 @@ namespace WinUIpad
             ((FrameworkElement)this.Content).RequestedTheme = ElementTheme.Dark;
         }
 
+        private void SystemRadioButton_Click(object sender, RoutedEventArgs e)
+        {
+            ((FrameworkElement)this.Content).RequestedTheme = ElementTheme.Default;
+        }
+
         private void StatusBarToggle_Toggled(object sender, RoutedEventArgs e)
         {
             var isVisible = StatusBarToggle.IsOn;
@@ -546,9 +581,59 @@ namespace WinUIpad
             Settings.Default.Save();
         }
 
-        private void SystemRadioButton_Click(object sender, RoutedEventArgs e)
+        private void FontFamilyComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            ((FrameworkElement)this.Content).RequestedTheme = ElementTheme.Default;
+            FontExampleTextBlock.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily((string)FontFamilyComboBox.SelectedItem);
+            TextBox1.FontFamily = FontExampleTextBlock.FontFamily;
+            Settings.Default.FontName = TextBox1.FontFamily.Source.ToString();
+            Settings.Default.Save();
+        }
+
+        private void FontStyleComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // fontBold && fontItalic
+            if (FontStyleComboBox.SelectedIndex == 3)
+            {
+                FontExampleTextBlock.FontStyle = FontStyle.Italic;
+                FontExampleTextBlock.FontWeight = FontWeights.Bold;
+            }
+            // fontBold == true && fontItalic == false
+            else if (FontStyleComboBox.SelectedIndex == 2)
+            {
+                FontExampleTextBlock.FontStyle = FontStyle.Normal;
+                FontExampleTextBlock.FontWeight = FontWeights.Bold;
+            }
+            // fontItalic == true && fontBold == false
+            else if (FontStyleComboBox.SelectedIndex == 1)
+            {
+                FontExampleTextBlock.FontStyle = FontStyle.Italic;
+                FontExampleTextBlock.FontWeight = FontWeights.Normal;
+            }
+            // normal / 0
+            else
+            {
+                FontExampleTextBlock.FontStyle = FontStyle.Normal;
+                FontExampleTextBlock.FontWeight = FontWeights.Normal;
+            }
+
+            TextBox1.FontStyle = FontExampleTextBlock.FontStyle;
+            TextBox1.FontWeight = FontExampleTextBlock.FontWeight;
+
+            if(TextBox1.FontStyle == FontStyle.Italic)
+                Settings.Default.FontItalic = true;
+            else Settings.Default.FontItalic = false;
+
+            if(TextBox1.FontWeight == FontWeights.Bold)
+                Settings.Default.FontBold = true;
+            else Settings.Default.FontBold = false;
+
+            Settings.Default.Save();
+        }
+
+        private void FontSizeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            FontExampleTextBlock.FontSize = (double)FontSizeComboBox.SelectedItem;
+            TextBox1.FontSize = FontExampleTextBlock.FontSize;
         }
     }
 }

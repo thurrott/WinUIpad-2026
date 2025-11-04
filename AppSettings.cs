@@ -1,4 +1,5 @@
 ﻿using Microsoft.Graphics.Canvas.Text;
+using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System.ComponentModel;
@@ -80,8 +81,17 @@ namespace WinUIpad
             fontBold = Settings.Default.FontBold;
         }
 
-        public void SaveFontSettings()
+        public void SaveFontSettings(TextBox tb)
         {
+            Settings.Default.FontName = tb.FontFamily.Source.ToString();
+            Settings.Default.FontSize = tb.FontSize;
+            if (tb.FontStyle == Windows.UI.Text.FontStyle.Italic)
+                Settings.Default.FontItalic = true;
+            else Settings.Default.FontItalic = false;
+            if (tb.FontWeight == FontWeights.Bold)
+                Settings.Default.FontBold = true;
+            else Settings.Default.FontBold = false;
+            
             Settings.Default.Save();
         }
 
