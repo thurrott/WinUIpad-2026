@@ -5,7 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d" Title="WinUIpad" Closed="Window_Closed">
+    mc:Ignorable="d" Closed="Window_Closed">
 
     <Window.SystemBackdrop>
         <MicaBackdrop />
@@ -28,7 +28,8 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Image Grid.Column="0" Source="/Assets/t-pride-icon.png" Width="16" Height="16" Margin="0" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="1" Style="{StaticResource BodyStrongTextBlockStyle}" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextTrimming="Clip" Text="WinUIpad" />
+                <TextBlock Grid.Column="1" Name="TitleTextBlock" Style="{StaticResource BodyStrongTextBlockStyle}" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextTrimming="Clip"
+                           Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource FileNameConverter}}" />
             </Grid>
             <Grid Grid.Row="1" Name="MenubarGrid" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent">
                 <Grid.ColumnDefinitions>

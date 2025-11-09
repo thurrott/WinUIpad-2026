@@ -48,6 +48,7 @@ namespace WinUIpad
             LoadAppSettings();
 
             // Set up document
+            TitlebarGrid.DataContext = doc;
             doc.ResetDocument();
 
             // Focus the text box when the app appears
@@ -521,7 +522,8 @@ namespace WinUIpad
 
         private void TextBox1_TextChanging(Microsoft.UI.Xaml.Controls.TextBox sender, Microsoft.UI.Xaml.Controls.TextBoxTextChangingEventArgs args)
         {
-                
+            doc.TextHasChanged = true;
+            doc.Contents = sender.Text;
         }
 
         //

@@ -48,6 +48,10 @@ namespace WinUIpad
                 d.TextHasChanged = false;
                 d.DocumentIsSaved = true;
             }
+            if (file != null) 
+                d.FileName = file.Path;
+            else
+                d.FileName = "Untitled.txt";
         }
 
         public async Task<bool> NeedsToBeSavedAsync(MainWindow mw, Document d)
