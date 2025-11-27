@@ -290,27 +290,24 @@ namespace WinUIpad
             // This is for File > New and File > Open
 
             FileOperations fo = new FileOperations();
-            if (app.AppCanBeClosed == false)
+            if (await fo.NeedsToBeSavedAsync(this, doc))
             {
-                if (await fo.NeedsToBeSavedAsync(this, doc))
+                if (doc != null)
                 {
-                    if (doc != null)
+                    string menuText = ((MenuFlyoutItem)sender).Text;
+                    switch (menuText)
                     {
-                        string menuText = ((MenuFlyoutItem)sender).Text;
-                        switch (menuText)
-                        {
-                            case "New":
-                                doc.ResetDocument(app);
-                                UpdatePosition();
-                                break;
-                            case "Open":
-                                fo.OpenFile(this, doc);
-                                app.AppCanBeClosed = true;
-                                UpdatePosition();
-                                break;
-                            default:
-                                break;
-                        }
+                        case "New":
+                            doc.ResetDocument(app);
+                            UpdatePosition();
+                            break;
+                        case "Open":
+                            fo.OpenFile(this, doc);
+                            app.AppCanBeClosed = true;
+                            UpdatePosition();
+                            break;
+                        default:
+                            break;
                     }
                 }
             }
