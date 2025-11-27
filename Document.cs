@@ -64,12 +64,13 @@ namespace WinUIpad
             }
         }
 
-        public void ResetDocument()
+        public void ResetDocument(App app)
         {
             FileName = "Untitled.txt";
             Contents = "";
             TextHasChanged = false;
             DocumentIsSaved = false;
+            app.AppCanBeClosed = true;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

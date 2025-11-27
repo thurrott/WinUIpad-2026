@@ -68,7 +68,7 @@ namespace WinUIpad
                     {
                         // Save
                         case ContentDialogResult.Primary:
-                            if (SaveDocument(mw, d))
+                            if (await SaveDocument(mw, d) == true)
                                 return true;
                             break;
                         // Don't save
@@ -83,7 +83,7 @@ namespace WinUIpad
             return true;
         }
 
-        public bool SaveDocument(MainWindow mw, Document d)
+        public async Task<bool> SaveDocument(MainWindow mw, Document d)
         {
             // true: Success, continue
             // false: Cancel
@@ -100,42 +100,44 @@ namespace WinUIpad
                         d.DocumentIsSaved = true;
                         return true;
                     }
-                    else
-                    {
-                        return false;
-                    }
+                    else { return false; }
                 }
-                else
-                {
-                    return false;
-                }
+                else { return false; }
             }
             else
             {
-                // return SaveAs(mw, d).Result;
-                // This should called SaveNewDocument now
-                return true;
+                // Save as
+                if (d != null) { return await FileOperations.SaveAsDocument(WinRT.Interop.WindowNative.GetWindowHandle(mw), d); }
+                else { return false; }
             }
         }
 
-        public async Task<bool> SaveAsDocument(nint hwnd, Document d)
+        public static async Task<bool> SaveAsDocument(nint hwnd, Document d)
         {
             var savePicker = new Windows.Storage.Pickers.FileSavePicker();
             // savePicker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.ComputerFolder;
             savePicker.SuggestedFileName = Path.GetFileNameWithoutExtension(d.FileName);
             savePicker.FileTypeChoices.Add("Text file (*.txt)", [".txt"]);
             WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hwnd);
-            StorageFile file = await savePicker.PickSaveFileAsync();
-            if (file != null)
+            try
             {
-                await Windows.Storage.FileIO.WriteTextAsync(file, d.Contents);
-                d.FileName = file.Path;
-                d.DocumentIsSaved = true;
-                d.TextHasChanged = false;
-                return true;
+                StorageFile file = await savePicker.PickSaveFileAsync();
+
+                if (file != null)
+                {
+                    await Windows.Storage.FileIO.WriteTextAsync(file, d.Contents);
+                    d.FileName = file.Path;
+                    d.DocumentIsSaved = true;
+                    d.TextHasChanged = false;
+                    return true;
+                }
+                // User cancelled the save operation
+                else return false;
             }
-            // User cancelled the save operation
-            else return false;
+            catch
+            {
+                return false;
+            }
         }
     }
 }

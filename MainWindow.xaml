@@ -5,7 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d" Closed="Window_Closed">
+    mc:Ignorable="d">
 
     <Window.SystemBackdrop>
         <MicaBackdrop />
@@ -37,43 +37,43 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <MenuBar Grid.Column="0" HorizontalAlignment="Stretch">
-                    <MenuBarItem Title="File">
-                        <MenuFlyoutItem Name="NewMenu" Text="New" Click="FileOpMenu_Click">
+                    <MenuBarItem Title="File" AccessKey="F">
+                        <MenuFlyoutItem Name="NewMenu" Text="New" Click="FileOpMenu_Click" AccessKey="N">
                             <MenuFlyoutItem.KeyboardAccelerators>
                                 <KeyboardAccelerator Key="N" Modifiers="Control"/>
                             </MenuFlyoutItem.KeyboardAccelerators>
                         </MenuFlyoutItem>
-                        <MenuFlyoutItem Name="NewWindowMenu" Text="New window" Click="NewWindowMenu_Click">
+                        <MenuFlyoutItem Name="NewWindowMenu" Text="New window" Click="NewWindowMenu_Click" AccessKey="W">
                             <MenuFlyoutItem.KeyboardAccelerators>
                                 <KeyboardAccelerator Key="N" Modifiers="Control,Shift"/>
                             </MenuFlyoutItem.KeyboardAccelerators>
                         </MenuFlyoutItem>
-                        <MenuFlyoutItem Name="OpenMenu" Text="Open" Click="FileOpMenu_Click">
+                        <MenuFlyoutItem Name="OpenMenu" Text="Open" Click="FileOpMenu_Click" AccessKey="O">
                             <MenuFlyoutItem.KeyboardAccelerators>
                                 <KeyboardAccelerator Key="O" Modifiers="Control"/>
                             </MenuFlyoutItem.KeyboardAccelerators>
                         </MenuFlyoutItem>
-                        <MenuFlyoutItem Name="SaveMenu" Text="Save" Click="SaveMenu_Click">
+                        <MenuFlyoutItem Name="SaveMenu" Text="Save" Click="SaveMenu_Click" AccessKey="S">
                             <MenuFlyoutItem.KeyboardAccelerators>
                                 <KeyboardAccelerator Key="S" Modifiers="Control"/>
                             </MenuFlyoutItem.KeyboardAccelerators>
                         </MenuFlyoutItem>
-                        <MenuFlyoutItem Name="SaveAsMenu" Text="Save as" Click="SaveAsMenu_Click">
+                        <MenuFlyoutItem Name="SaveAsMenu" Text="Save as" Click="SaveAsMenu_Click" AccessKey="A">
                             <MenuFlyoutItem.KeyboardAccelerators>
                                 <KeyboardAccelerator Key="S" Modifiers="Control,Shift" />
                             </MenuFlyoutItem.KeyboardAccelerators>
                         </MenuFlyoutItem>
                         <MenuFlyoutSeparator />
                         <MenuFlyoutItem Name="PageSetupMenu" Text="Page setup" Click="PageSetupMenu_Click" />
-                        <MenuFlyoutItem Name="PrintMenu" Text="Print" Click="PrintMenu_Click">
+                        <MenuFlyoutItem Name="PrintMenu" Text="Print" Click="PrintMenu_Click" AccessKey="P">
                             <MenuFlyoutItem.KeyboardAccelerators>
                                 <KeyboardAccelerator Key="P" Modifiers="Control"/>
                             </MenuFlyoutItem.KeyboardAccelerators>
                         </MenuFlyoutItem>
                         <MenuFlyoutSeparator />
-                        <MenuFlyoutItem Name="ExitMenu" Text="Exit" Click="ExitMenu_Click" />
+                        <MenuFlyoutItem Name="ExitMenu" Text="Exit" Click="ExitMenu_Click" AccessKey="X" />
                     </MenuBarItem>
-                    <MenuBarItem Title="Edit">
+                    <MenuBarItem Title="Edit" AccessKey="E">
                         <MenuFlyoutItem Name="UndoMenu" Text="Undo" Icon="Undo" Click="UndoMenu_Click">
                             <MenuFlyoutItem.KeyboardAccelerators>
                                 <KeyboardAccelerator Key="Z" Modifiers="Control"/>
@@ -142,7 +142,7 @@
                         <MenuFlyoutSeparator />
                         <MenuFlyoutItem Name="FontMenu" Text="Font" Click="FontMenu_Click"/>
                     </MenuBarItem>
-                    <MenuBarItem Title="View">
+                    <MenuBarItem Title="View" AccessKey="V">
                         <MenuFlyoutSubItem Name="ZoomMenu" Text="Zoom">
                             <MenuFlyoutItem Name="ZoomInMenu" Text="Zoom in" Click="ZoomInMenu_Click">
                                 <MenuFlyoutItem.KeyboardAccelerators>
@@ -166,7 +166,7 @@
                 </MenuBar>
                 <Button Grid.Column="2" Name="SettingsButton" Height="32" Width="48" HorizontalAlignment="Right" Content="&#xE713;" FontFamily="Segoe Fluent Icons" BorderBrush="Transparent" Background="Transparent" Click="SettingsButton_Click" />
             </Grid>
-            <TextBox Grid.Row="2" Name="TextBox1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="10,0,10,10" AllowDrop="True" AcceptsReturn="True" TextChanging="TextBox1_TextChanging" 
+            <TextBox Grid.Row="2" Name="TextBox1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="10,0,10,10" AllowDrop="True" AcceptsReturn="True" TextChanging="TextBox1_TextChanging" SelectionChanging="TextBox1_SelectionChanged"
                      Text="{x:Bind Path=doc.Contents, Mode=TwoWay}" />
             <Grid Grid.Row="3" Name="StatusbarGrid" Height="24" HorizontalAlignment="Stretch" VerticalAlignment="Center">
                 <Grid.ColumnDefinitions>
@@ -175,7 +175,7 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Name = "PositionText" Text="Ln 1, Col 1" Style="{StaticResource BodyTextBlockStyle}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="12,-10,0,0"/>
-                <TextBlock Grid.Column="1" Name = "CountText" Text="0 characters" Style="{StaticResource BodyTextBlockStyle}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="50,-10,0,0"/>
+                <TextBlock Grid.Column="1" Name = "CountText" Text="0 words" Style="{StaticResource BodyTextBlockStyle}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="50,-10,0,0"/>
                 <TextBlock Grid.Column="2" Name = "ZoomText" Text="100%" Style="{StaticResource BodyTextBlockStyle}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="50,-10,0,0"/>
             </Grid>
         </Grid>

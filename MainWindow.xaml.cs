@@ -6,7 +6,9 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Windows.UI.Text;
+using Windows.UI.WindowManagement;
 
 namespace WinUIpad
 {
@@ -25,19 +27,25 @@ namespace WinUIpad
         private bool fontItalic = false, fontBold = false;
 
         // State
-        AppWindow appWindow;
+        Microsoft.UI.Windowing.AppWindow? appWindow;
         public AppSettings appSettings { get; set; }
 
         public MainWindow()
         {
             appSettings = new();
 
-            InitializeComponent();
-
             // For window metrics
             IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
             appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
+
+            // Handle the app window Closing event
+            if (appWindow != null)
+            {
+                appWindow.Closing += OnClosing;
+            }
+
+            InitializeComponent();
 
             // Customize the title bar
             ExtendsContentIntoTitleBar = true;
@@ -49,9 +57,9 @@ namespace WinUIpad
 
             // Set up document
             TitlebarGrid.DataContext = doc;
-            doc.ResetDocument();
+            doc.ResetDocument(app);
 
-            // Focus the text box when the app appears
+            // Focus the text box when the app window appears
             this.TextBox1.Loaded += (s, e) =>
             {
                 this.TextBox1.Focus(FocusState.Programmatic);
@@ -63,7 +71,10 @@ namespace WinUIpad
             var app = (App)Application.Current;
 
             // Window metrics
-            appSettings.LoadWindowSettings(appWindow);
+            if (appWindow != null)
+            {
+                appSettings.LoadWindowSettings(appWindow);
+            }
 
             // Theme
             ((FrameworkElement)this.Content).RequestedTheme = appSettings.LoadThemeSettings(ThemeRadioButtons) switch
@@ -152,13 +163,123 @@ namespace WinUIpad
             FontExampleTextBlock.FontSize = (double)FontSizeComboBox.SelectedItem;
         }
 
-        private void Window_Closed(object sender, WindowEventArgs args)
+        private async void OnClosing(object sender, AppWindowClosingEventArgs e)
         {
-            appSettings.SaveWindowSettings(appWindow);
-            appSettings.SaveThemeSettings(ThemeRadioButtons);
-            appSettings.SaveFontSettings(TextBox1);
-            appSettings.SaveWordWrapSettings(TextBox1.TextWrapping);
-            appSettings.SaveStatusBarSettings(StatusbarGrid.Visibility);
+            // Prevent the app window from closing immediately
+            e.Cancel = true;
+
+            if (await BeforeClosing())
+            {
+                try
+                {
+                    e.Cancel = false;
+                    this.Close();
+                }
+                catch
+                {
+                    e.Cancel = false;
+                    Application.Current.Exit();
+                }
+            }
+
+            //// Prevent the app window from closing immediately
+            //e.Cancel = true;
+
+            //while (e.Cancel == true)
+            //{
+            //    FileOperations fo = new FileOperations();
+            //    // NeedsToBeSavedAsync returns ...
+            //    // true: Continue
+            //    // false: Cancel
+            //    if (await fo.NeedsToBeSavedAsync(this, doc))
+            //    {
+            //        // Can continue to close the app window
+            //        if (appWindow != null)
+            //        {
+            //            // Save settings
+            //            appSettings.SaveWindowSettings(appWindow);
+            //            appSettings.SaveThemeSettings(ThemeRadioButtons);
+            //            appSettings.SaveFontSettings(TextBox1);
+            //            appSettings.SaveWordWrapSettings(TextBox1.TextWrapping);
+            //            appSettings.SaveStatusBarSettings(StatusbarGrid.Visibility);
+            //            e.Cancel = false;
+            //            Application.Current.Exit();
+            //        }
+            //    }
+            //    else
+            //    {
+            //        // Otherwise, just return to app and focus the text box
+            //        TextBox1.Focus(FocusState.Programmatic);
+            //        return;
+            //    }
+            //    e.Cancel = false;
+            //    Application.Current.Exit();
+            //}
+            //e.Cancel = false;
+            //Application.Current.Exit();
+        }
+
+        // Helper method to run before the app window closes
+        // TO-Do: Doesn't exit properly if a new document is saved first
+        private async Task<bool> BeforeClosing()
+        {
+            // Returns false if the app should stay open
+            // Returns true if the app can now close
+
+            FileOperations fo = new FileOperations();
+
+            // NeedsToBeSavedAsync returns:
+            //  true: user chose Continue (may have saved)
+            //  false: user chose Cancel
+            if (app.AppCanBeClosed == false)
+            {
+                if (!await fo.NeedsToBeSavedAsync(this, doc))
+                {
+                    // User cancelled the exit — return to app and focus the editor.
+                    TextBox1.Focus(FocusState.Programmatic);
+                    return false;
+                }
+            }
+
+            // User chose to continue. Save the same settings the OnClosing handler saves
+            // so we don't prompt again when forcing shutdown.
+            try
+            {
+                // Try to use the cached AppWindow if available
+                if (appWindow != null)
+                {
+                    appSettings.SaveWindowSettings(appWindow);
+                }
+                else
+                {
+                    // Try to resolve AppWindow from the current Window handle and save window settings if found
+                    try
+                    {
+                        IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+                        var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
+                        var resolvedAppWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
+                        if (resolvedAppWindow != null)
+                        {
+                            appSettings.SaveWindowSettings(resolvedAppWindow);
+                        }
+                    }
+                    catch
+                    {
+                        // ignore resolution errors and continue saving other settings
+                    }
+                }
+
+                appSettings.SaveThemeSettings(ThemeRadioButtons);
+                appSettings.SaveFontSettings(TextBox1);
+                appSettings.SaveWordWrapSettings(TextBox1.TextWrapping);
+                appSettings.SaveStatusBarSettings(StatusbarGrid.Visibility);
+            }
+            catch
+            {
+                // If saving settings fails, still proceed with exit to avoid leaving the user frustrated.
+            }
+
+            return true;
         }
 
         //
@@ -169,21 +290,27 @@ namespace WinUIpad
             // This is for File > New and File > Open
 
             FileOperations fo = new FileOperations();
-            if (await fo.NeedsToBeSavedAsync(this, doc))
+            if (app.AppCanBeClosed == false)
             {
-                if (doc != null)
+                if (await fo.NeedsToBeSavedAsync(this, doc))
                 {
-                    string menuText = ((MenuFlyoutItem)sender).Text;
-                    switch (menuText)
+                    if (doc != null)
                     {
-                        case "New":
-                            doc.ResetDocument();
-                            break;
-                        case "Open":
-                            fo.OpenFile(this, doc);
-                            break;
-                        default:
-                            break;
+                        string menuText = ((MenuFlyoutItem)sender).Text;
+                        switch (menuText)
+                        {
+                            case "New":
+                                doc.ResetDocument(app);
+                                UpdatePosition();
+                                break;
+                            case "Open":
+                                fo.OpenFile(this, doc);
+                                app.AppCanBeClosed = true;
+                                UpdatePosition();
+                                break;
+                            default:
+                                break;
+                        }
                     }
                 }
             }
@@ -195,7 +322,7 @@ namespace WinUIpad
             newWindow.Activate();
         }
 
-        private void SaveMenu_Click(object sender, RoutedEventArgs e)
+        private async void SaveMenu_Click(object sender, RoutedEventArgs e)
         {
             if (doc != null)
             {
@@ -203,7 +330,10 @@ namespace WinUIpad
                 {
                     // Save existing document
                     FileOperations fo = new FileOperations();
-                    fo.SaveDocument(this, doc);
+                    if (await fo.SaveDocument(this, doc) == true)
+                    {
+                        app.AppCanBeClosed = true;
+                    }
                 }
                 else
                 {
@@ -217,25 +347,100 @@ namespace WinUIpad
         {
             if (doc != null)
             {
-                FileOperations fo = new FileOperations();
                 var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-                await fo.SaveAsDocument(hwnd, doc);
+                if(await FileOperations.SaveAsDocument(hwnd, doc) == true)
+                {
+                    app.AppCanBeClosed = true;
+                }
             }
         }
 
         private void PageSetupMenu_Click(object sender, RoutedEventArgs e)
         {
-
+            // TO-DO
         }
 
         private void PrintMenu_Click(object sender, RoutedEventArgs e)
         {
-
+            // TO-DO
         }
 
-        private void ExitMenu_Click(object sender, RoutedEventArgs e)
+        private async void ExitMenu_Click(object sender, RoutedEventArgs e)
         {
-            // State check before close
+            if(await BeforeClosing())
+            {
+                try
+                {
+                    this.Close();
+                }
+                catch
+                {
+                    Application.Current.Exit();
+                }
+            }
+
+
+            //// Uses the same "needs to be saved" logic the OnClosing handler uses because the Windows App SDK is terrible and GitHub Copilot can't deal with it either
+            //FileOperations fo = new FileOperations();
+
+                //// NeedsToBeSavedAsync returns:
+                ////  true: user chose Continue (may have saved)
+                ////  false: user chose Cancel
+                //if (!await fo.NeedsToBeSavedAsync(this, doc))
+                //{
+                //    // User cancelled the exit — return to app and focus the editor.
+                //    TextBox1.Focus(FocusState.Programmatic);
+                //    return;
+                //}
+
+                //// User chose to continue. Save the same settings the OnClosing handler saves
+                //// so we don't prompt again when forcing shutdown.
+                //try
+                //{
+                //    // Try to use the cached AppWindow if available
+                //    if (appWindow != null)
+                //    {
+                //        appSettings.SaveWindowSettings(appWindow);
+                //    }
+                //    else
+                //    {
+                //        // Try to resolve AppWindow from the current Window handle and save window settings if found
+                //        try
+                //        {
+                //            IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+                //            var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
+                //            var resolvedAppWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
+                //            if (resolvedAppWindow != null)
+                //            {
+                //                appSettings.SaveWindowSettings(resolvedAppWindow);
+                //            }
+                //        }
+                //        catch
+                //        {
+                //            // ignore resolution errors and continue saving other settings
+                //        }
+                //    }
+
+                //    appSettings.SaveThemeSettings(ThemeRadioButtons);
+                //    appSettings.SaveFontSettings(TextBox1);
+                //    appSettings.SaveWordWrapSettings(TextBox1.TextWrapping);
+                //    appSettings.SaveStatusBarSettings(StatusbarGrid.Visibility);
+                //}
+                //catch
+                //{
+                //    // If saving settings fails, still proceed with exit to avoid leaving the user frustrated.
+                //}
+
+                //// Close the window / exit the app.
+                //// Prefer calling Close() to allow normal window teardown; if that doesn't work, fall back to exiting the app.
+                //try
+                //{
+                //    this.Close();
+                //}
+                //catch
+                //{
+                //    Application.Current.Exit();
+                //}
         }
 
         //
@@ -468,17 +673,17 @@ namespace WinUIpad
 
         private void ZoomInMenu_Click(object sender, RoutedEventArgs e)
         {
-
+            // TO-DO
         }
 
         private void ZoomOutMenu_Click(object sender, RoutedEventArgs e)
         {
-
+            // TO-DO
         }
 
         private void RestoreDefaultZoomMenu_Click(object sender, RoutedEventArgs e)
         {
-
+            // TO-DO
         }
 
         private void StatusBarMenu_Click(object sender, RoutedEventArgs e)
@@ -520,10 +725,60 @@ namespace WinUIpad
         // Text box event handlers
         //
 
-        private void TextBox1_TextChanging(Microsoft.UI.Xaml.Controls.TextBox sender, Microsoft.UI.Xaml.Controls.TextBoxTextChangingEventArgs args)
+        private void TextBox1_TextChanging(Microsoft.UI.Xaml.Controls.TextBox sender, TextBoxTextChangingEventArgs args)
         {
             doc.TextHasChanged = true;
             doc.Contents = sender.Text;
+            UpdateCount();
+            app.AppCanBeClosed = false;
+        }
+
+        private void TextBox1_SelectionChanged(TextBox sender, TextBoxSelectionChangingEventArgs args)
+        {
+            UpdatePosition();
+        }
+
+        // Helper method to update the line and column position display in the status bar
+        // TO-DO: This is broken and needs to be fixed
+        public void UpdatePosition()
+        {
+            // Calculate line and column manually since TextBox does not have GetLineIndexFromCharacterIndex
+
+            string text = TextBox1.Text ?? string.Empty;
+            int caretIndex = TextBox1.SelectionStart;
+
+            int lineNumber = 0;
+            int columnNumber = 0;
+            int offset = 0;
+            
+            // Use '\r' as the split delimiter, as WinUI TextBox often uses '\r' for line endings
+            string[] lines = text.Split('\r');
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string line = lines[i];
+                // Check if the caret is within the current line (including the line ending character for the previous line)
+                if (caretIndex <= offset + line.Length)
+                {
+                    lineNumber = i;
+                    columnNumber = caretIndex - offset;
+                    break;
+                }
+                offset += line.Length;
+                offset++;
+            }
+
+            PositionText.Text = $"Ln: {lineNumber + 1}, Col: {columnNumber + 1}";
+        }
+
+        // Helper method to update the word count display in the status bar
+        // TO-DO: This needs to toggle between word and character count
+        public void UpdateCount()
+        {
+            int Count = System.Text.RegularExpressions.Regex.Matches(TextBox1.Text, @"[\S]+").Count;
+            CountText.Text = Count.ToString() + " word";
+            if (Count == 0 | Count > 1)
+                CountText.Text += "s";
         }
 
         //
