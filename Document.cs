@@ -70,7 +70,6 @@ namespace WinUIpad
             Contents = "";
             TextHasChanged = false;
             DocumentIsSaved = false;
-            app.AppCanBeClosed = true;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

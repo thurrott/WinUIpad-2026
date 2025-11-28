@@ -20,10 +20,6 @@ namespace WinUIpad
 {
     public partial class App : Application
     {
-        // App state 
-        public bool IsMaximized { get; set; } = false;
-        public bool AppCanBeClosed { get; set; } = true;
-
         private Window? _window;
 
         public App()

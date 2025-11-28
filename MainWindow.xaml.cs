@@ -14,7 +14,10 @@ namespace WinUIpad
 {
     public sealed partial class MainWindow : Window
     {
+        // State
         public App app = (App)Application.Current;
+        private readonly Microsoft.UI.Windowing.AppWindow? appWindow;
+        public AppSettings appSettings { get; set; }
         public Document doc = new();
 
         // Find and replace
@@ -26,19 +29,13 @@ namespace WinUIpad
         private double fontSize = 0;
         private bool fontItalic = false, fontBold = false;
 
-        // State
-        Microsoft.UI.Windowing.AppWindow? appWindow;
-        public AppSettings appSettings { get; set; }
-
         public MainWindow()
         {
             appSettings = new();
 
             // For window metrics
-            IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-            var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
-            appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
-
+            appWindow = this.AppWindow;
+            
             // Handle the app window Closing event
             if (appWindow != null)
             {
@@ -170,53 +167,8 @@ namespace WinUIpad
 
             if (await BeforeClosing())
             {
-                try
-                {
-                    e.Cancel = false;
-                    this.Close();
-                }
-                catch
-                {
-                    e.Cancel = false;
-                    Application.Current.Exit();
-                }
+                Application.Current.Exit();
             }
-
-            //// Prevent the app window from closing immediately
-            //e.Cancel = true;
-
-            //while (e.Cancel == true)
-            //{
-            //    FileOperations fo = new FileOperations();
-            //    // NeedsToBeSavedAsync returns ...
-            //    // true: Continue
-            //    // false: Cancel
-            //    if (await fo.NeedsToBeSavedAsync(this, doc))
-            //    {
-            //        // Can continue to close the app window
-            //        if (appWindow != null)
-            //        {
-            //            // Save settings
-            //            appSettings.SaveWindowSettings(appWindow);
-            //            appSettings.SaveThemeSettings(ThemeRadioButtons);
-            //            appSettings.SaveFontSettings(TextBox1);
-            //            appSettings.SaveWordWrapSettings(TextBox1.TextWrapping);
-            //            appSettings.SaveStatusBarSettings(StatusbarGrid.Visibility);
-            //            e.Cancel = false;
-            //            Application.Current.Exit();
-            //        }
-            //    }
-            //    else
-            //    {
-            //        // Otherwise, just return to app and focus the text box
-            //        TextBox1.Focus(FocusState.Programmatic);
-            //        return;
-            //    }
-            //    e.Cancel = false;
-            //    Application.Current.Exit();
-            //}
-            //e.Cancel = false;
-            //Application.Current.Exit();
         }
 
         // Helper method to run before the app window closes
@@ -231,16 +183,14 @@ namespace WinUIpad
             // NeedsToBeSavedAsync returns:
             //  true: user chose Continue (may have saved)
             //  false: user chose Cancel
-            if (app.AppCanBeClosed == false)
+            
+            if (!await fo.NeedsToBeSavedAsync(this, doc))
             {
-                if (!await fo.NeedsToBeSavedAsync(this, doc))
-                {
-                    // User cancelled the exit — return to app and focus the editor.
-                    TextBox1.Focus(FocusState.Programmatic);
-                    return false;
-                }
+                // User cancelled the exit — return to app and focus the editor.
+                TextBox1.Focus(FocusState.Programmatic);
+                return false;
             }
-
+            
             // User chose to continue. Save the same settings the OnClosing handler saves
             // so we don't prompt again when forcing shutdown.
             try
@@ -255,13 +205,17 @@ namespace WinUIpad
                     // Try to resolve AppWindow from the current Window handle and save window settings if found
                     try
                     {
-                        IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-                        var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
-                        var resolvedAppWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
-                        if (resolvedAppWindow != null)
+                        if (appWindow != null)
                         {
-                            appSettings.SaveWindowSettings(resolvedAppWindow);
+                            appSettings.SaveWindowSettings(appWindow);
                         }
+                        //IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+                        //var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
+                        //var resolvedAppWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
+                        //if (resolvedAppWindow != null)
+                        //{
+                        //    appSettings.SaveWindowSettings(resolvedAppWindow);
+                        //}
                     }
                     catch
                     {
@@ -303,7 +257,6 @@ namespace WinUIpad
                             break;
                         case "Open":
                             fo.OpenFile(this, doc);
-                            app.AppCanBeClosed = true;
                             UpdatePosition();
                             break;
                         default:
@@ -323,21 +276,36 @@ namespace WinUIpad
         {
             if (doc != null)
             {
-                if (doc.DocumentIsSaved)
-                {
-                    // Save existing document
-                    FileOperations fo = new FileOperations();
-                    if (await fo.SaveDocument(this, doc) == true)
-                    {
-                        app.AppCanBeClosed = true;
-                    }
-                }
-                else
+                if (doc.DocumentIsSaved == false)
                 {
                     // Save as a new document
                     SaveAsMenu_Click(sender, e);
                 }
+                else
+                {
+                    // Save existing document
+                    FileOperations fo = new FileOperations();
+                    await fo.SaveDocument(this, doc);
+                }
             }
+
+            //if (doc != null)
+            //{
+            //    if (doc.DocumentIsSaved)
+            //    {
+            //        // Save existing document
+            //        FileOperations fo = new FileOperations();
+            //        if (await fo.SaveDocument(this, doc) == true)
+            //        {
+            //            app.AppCanBeClosed = true;
+            //        }
+            //    }
+            //    else
+            //    {
+            //        // Save as a new document
+            //        SaveAsMenu_Click(sender, e);
+            //    }
+            //}
         }
 
         private async void SaveAsMenu_Click(object sender, RoutedEventArgs e)
@@ -345,10 +313,7 @@ namespace WinUIpad
             if (doc != null)
             {
                 var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-                if(await FileOperations.SaveAsDocument(hwnd, doc) == true)
-                {
-                    app.AppCanBeClosed = true;
-                }
+                await FileOperations.SaveAsDocument(hwnd, doc);
             }
         }
 
@@ -727,7 +692,6 @@ namespace WinUIpad
             doc.TextHasChanged = true;
             doc.Contents = sender.Text;
             UpdateCount();
-            app.AppCanBeClosed = false;
         }
 
         private void TextBox1_SelectionChanged(TextBox sender, TextBoxSelectionChangingEventArgs args)
