@@ -26,10 +26,13 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="32" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="16" />
                 </Grid.ColumnDefinitions>
                 <Image Grid.Column="0" Source="/Assets/t-pride-icon.png" Width="16" Height="16" Margin="0" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="1" Name="TitleTextBlock" Style="{StaticResource BodyStrongTextBlockStyle}" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextTrimming="Clip"
                            Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource FileNameConverter}}" />
+                <TextBlock Grid.Column="2" Name="NeedsToBeSavedTextBock" VerticalAlignment="Center" Margin="5,0,0,0" FontFamily="Segoe Fluent Icons" Text="&#xE91F;" FontSize="6" Foreground="{StaticResource TextFillColorSecondaryBrush}"
+                           Visibility="{x:Bind doc.TextHasChanged, Mode=OneWay}" ToolTipService.ToolTip="This document has unsaved changes" />
             </Grid>
             <Grid Grid.Row="1" Name="MenubarGrid" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent">
                 <Grid.ColumnDefinitions>

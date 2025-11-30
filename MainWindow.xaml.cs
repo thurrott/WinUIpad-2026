@@ -49,6 +49,13 @@ namespace WinUIpad
             SetTitleBar(TitlebarGrid);
             TitlebarGrid.MinWidth = 188;
 
+            // Set minimum width and height for app window
+            if (this.AppWindow.Presenter is OverlappedPresenter presenter)
+            {
+                presenter.PreferredMinimumWidth = 1200;
+                presenter.PreferredMinimumHeight = 800;
+            }
+
             // Load app settings
             LoadAppSettings();
 
@@ -209,13 +216,19 @@ namespace WinUIpad
                         {
                             appSettings.SaveWindowSettings(appWindow);
                         }
-                        //IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-                        //var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
-                        //var resolvedAppWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
-                        //if (resolvedAppWindow != null)
-                        //{
-                        //    appSettings.SaveWindowSettings(resolvedAppWindow);
-                        //}
+
+
+
+                        IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+                        var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
+                        var resolvedAppWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
+                        if (resolvedAppWindow != null)
+                        {
+                            appSettings.SaveWindowSettings(resolvedAppWindow);
+                        }
+
+
+
                     }
                     catch
                     {
@@ -331,14 +344,7 @@ namespace WinUIpad
         {
             if(await BeforeClosing())
             {
-                try
-                {
-                    this.Close();
-                }
-                catch
-                {
-                    Application.Current.Exit();
-                }
+                Application.Current.Exit();
             }
 
 
