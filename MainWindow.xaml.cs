@@ -3,12 +3,17 @@ using Microsoft.UI.Text;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Windows.Foundation;
+using Microsoft.UI.Xaml.Printing;
+using Windows.Graphics.Printing;
 using Windows.UI.Text;
 using Windows.UI.WindowManagement;
+using Microsoft.UI.Dispatching;
 
 namespace WinUIpad
 {
@@ -29,6 +34,11 @@ namespace WinUIpad
         private double fontSize = 0;
         private bool fontItalic = false, fontBold = false;
 
+        // Printing
+        PrintDocument? printDocument = null;
+        IPrintDocumentSource? printDocumentSource = null;
+        List<UIElement> printPreviewPages = new List<UIElement>();
+
         public MainWindow()
         {
             appSettings = new();
@@ -47,7 +57,6 @@ namespace WinUIpad
             // Customize the title bar
             ExtendsContentIntoTitleBar = true;
             SetTitleBar(TitlebarGrid);
-            TitlebarGrid.MinWidth = 188;
 
             // Set minimum width and height for app window
             if (this.AppWindow.Presenter is OverlappedPresenter presenter)
@@ -335,10 +344,61 @@ namespace WinUIpad
             // TO-DO
         }
 
-        private void PrintMenu_Click(object sender, RoutedEventArgs e)
+        private async void PrintMenu_Click(object sender, RoutedEventArgs e)
         {
-            // TO-DO
+            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            PrintManager printManager = PrintManagerInterop.GetForWindow(hWnd);
+            printManager.PrintTaskRequested += PrintTask_Requested;
+
+            printDocument = new PrintDocument();
+            printDocumentSource = printDocument.DocumentSource;
+            //printDocument.Paginate += PrintDocument_Paginate;
+            //printDocument.GetPreviewPage += PrintDocument_GetPreviewPage;
+            //printDocument.AddPages += PrintDocument_AddPages;
+
+            if (PrintManager.IsSupported())
+            {
+                try
+                {
+                    // Show system print UI.
+                    var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+                    await Windows.Graphics.Printing.PrintManagerInterop.ShowPrintUIForWindowAsync(hwnd);
+                }
+                catch
+                {
+                    // Printing cannot proceed at this time.
+                    ContentDialog noPrintingDialog = new ContentDialog()
+                    {
+                        Title = "Printing error",
+                        Content = "\nSorry, printing can' t proceed at this time.",
+                        PrimaryButtonText = "OK"
+                    };
+                    await noPrintingDialog.ShowAsync();
+                }
+            }
         }
+
+        private void PrintTask_Requested(PrintManager sender, PrintTaskRequestedEventArgs args)
+        {
+            // Create the PrintTask.
+            // Defines the title and delegate for PrintTaskSourceRequested.
+            PrintTask printTask = args.Request.CreatePrintTask("WinUI 3 Printing example", PrintTaskSourceRequested);
+
+            // Handle PrintTask.Completed to catch failed print jobs.
+            // printTask.Completed += PrintTask_Completed;
+
+            DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
+            {
+                // InvokePrintingButton.IsEnabled = false;
+            });
+        }
+
+        private void PrintTaskSourceRequested(PrintTaskSourceRequestedArgs args)
+        {
+            // Set the document source.
+            args.SetSource(printDocumentSource);
+        }
+
 
         private async void ExitMenu_Click(object sender, RoutedEventArgs e)
         {
@@ -620,6 +680,16 @@ namespace WinUIpad
             }
         }
 
+        private void SelectAllMenu_Click(object sender, RoutedEventArgs e)
+        {
+            TextBox1.DispatcherQueue.TryEnqueue(() => TextBox1.SelectAll());
+
+            this.TextBox1.Loaded += (s, e) =>
+            {
+                this.TextBox1.Focus(FocusState.Programmatic);
+            };
+        }
+
         private void TimeDateMenu_Click(object sender, RoutedEventArgs e)
         {
             int selectionStart = TextBox1.SelectionStart;
@@ -703,6 +773,122 @@ namespace WinUIpad
         private void TextBox1_SelectionChanged(TextBox sender, TextBoxSelectionChangingEventArgs args)
         {
             UpdatePosition();
+        }
+
+        private void TextBox1_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            // Override the default menu
+            e.Handled = true;
+
+            // Create a custom menu
+            var menu = new MenuFlyout();
+
+            var cutItem = new MenuFlyoutItem { Text = "Cut" };
+            cutItem.Click += (s, e2) =>
+            {
+                if (sender is TextBox textBox)
+                {
+                    textBox.CutSelectionToClipboard();
+                }
+            };
+
+            var copyItem = new MenuFlyoutItem { Text = "Copy" };
+            copyItem.Click += (s, e2) =>
+            {
+                if (sender is TextBox textBox)
+                {
+                    textBox.CopySelectionToClipboard();
+                }
+            };
+
+            var pasteItem = new MenuFlyoutItem { Text = "Paste" };
+            pasteItem.Click += (s, e2) =>
+            {
+                if (sender is TextBox textBox)
+                {
+                    textBox.PasteFromClipboard();
+                }
+            };
+
+            var selectAllItem = new MenuFlyoutItem { Text = "Select all" };
+            selectAllItem.Click += (s, e2) =>
+            {
+                if (sender is TextBox textBox)
+                {
+                    textBox.SelectAll();
+                    this.TextBox1.Loaded += (s, e) =>
+                    {
+                        this.TextBox1.Focus(FocusState.Programmatic);
+                    };
+                }
+            };
+
+            var deleteItem = new MenuFlyoutItem { Text = "Delete" };
+            deleteItem.Click += (s, e2) =>
+            {
+                if (sender is TextBox textBox)
+                {
+                    textBox.SelectedText = string.Empty;
+                }
+            };
+
+            var undoItem = new MenuFlyoutItem { Text = "Undo" };
+            undoItem.Click += (s, e2) =>
+            {
+                if (sender is TextBox textBox)
+                {
+                    if (TextBox1.CanUndo) TextBox1.Undo();
+                }
+            };
+
+            var rewriteItem = new MenuFlyoutItem { Text = "Rewrite" };
+            rewriteItem.Click += (s, e2) =>
+            {
+                if (sender is TextBox textBox)
+                {
+                    //
+                }
+            };
+
+            var summarizeItem = new MenuFlyoutItem { Text = "Summarize" };
+            summarizeItem.Click += (s, e2) =>
+            {
+                if (sender is TextBox textBox)
+                {
+                    //
+                }
+            };
+
+            var spellingItem = new ToggleMenuFlyoutItem { Text = "Spelling" };
+            spellingItem.Click += (s, e2) =>
+            {
+                if (sender is TextBox textBox)
+                {
+                    //
+                }
+            };
+
+            menu.Items.Add(cutItem);
+            menu.Items.Add(copyItem);
+            menu.Items.Add(pasteItem);
+            menu.Items.Add(selectAllItem);
+            menu.Items.Add(deleteItem);
+            menu.Items.Add(new MenuFlyoutSeparator());
+            menu.Items.Add(undoItem);
+            menu.Items.Add(new MenuFlyoutSeparator());
+            menu.Items.Add(rewriteItem);
+            menu.Items.Add(summarizeItem);
+            menu.Items.Add(new MenuFlyoutSeparator());
+            menu.Items.Add(spellingItem);
+
+            // Show the menu at the pointer location using CursorLeft and CursorTop from ContextMenuEventArgs
+            // This needs some fine-tuning
+            var windowPos = new Point(e.CursorLeft + 100, e.CursorTop + 100);
+
+            menu.ShowAt((FrameworkElement)sender, new FlyoutShowOptions
+            {
+                Position = windowPos
+            });
         }
 
         // Helper method to update the line and column position display in the status bar

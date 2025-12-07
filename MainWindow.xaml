@@ -26,12 +26,12 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="32" />
                     <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Image Grid.Column="0" Source="/Assets/t-pride-icon.png" Width="16" Height="16" Margin="0" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="1" Name="TitleTextBlock" Style="{StaticResource BodyStrongTextBlockStyle}" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextTrimming="Clip"
                            Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource FileNameConverter}}" />
-                <TextBlock Grid.Column="2" Name="NeedsToBeSavedTextBock" VerticalAlignment="Center" Margin="5,0,0,0" FontFamily="Segoe Fluent Icons" Text="&#xE91F;" FontSize="6" Foreground="{StaticResource TextFillColorSecondaryBrush}"
+                <TextBlock Grid.Column="2" Name="NeedsToBeSavedTextBock" VerticalAlignment="Center" Margin="20,0,0,0" FontFamily="Segoe Fluent Icons" Text="&#xE792;" Foreground="{StaticResource TextFillColorSecondaryBrush}"
                            Visibility="{x:Bind doc.TextHasChanged, Mode=OneWay}" ToolTipService.ToolTip="This document has unsaved changes" />
             </Grid>
             <Grid Grid.Row="1" Name="MenubarGrid" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent">
@@ -136,7 +136,7 @@
                             </MenuFlyoutItem.KeyboardAccelerators>
                         </MenuFlyoutItem>
                         <MenuFlyoutSeparator />
-                        <MenuFlyoutItem Name="SelectAllMenu" Text="Select all" />
+                        <MenuFlyoutItem Name="SelectAllMenu" Text="Select all" Click="SelectAllMenu_Click" />
                         <MenuFlyoutItem Name="TimeDateMenu" Text="Time/date" Click="TimeDateMenu_Click">
                             <MenuFlyoutItem.KeyboardAccelerators>
                                 <KeyboardAccelerator Key="F5"/>
@@ -169,8 +169,13 @@
                 </MenuBar>
                 <Button Grid.Column="2" Name="SettingsButton" Height="32" Width="48" HorizontalAlignment="Right" Content="&#xE713;" FontFamily="Segoe Fluent Icons" BorderBrush="Transparent" Background="Transparent" Click="SettingsButton_Click" />
             </Grid>
-            <TextBox Grid.Row="2" Name="TextBox1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="10,0,10,10" AllowDrop="True" AcceptsReturn="True" TextChanging="TextBox1_TextChanging" SelectionChanging="TextBox1_SelectionChanged"
-                     Text="{x:Bind Path=doc.Contents, Mode=TwoWay}" />
+            <TextBox Grid.Row="2" Name="TextBox1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="10,0,10,10" AllowDrop="True" AcceptsReturn="True" TextChanging="TextBox1_TextChanging" SelectionChanging="TextBox1_SelectionChanged" ContextMenuOpening="TextBox1_ContextMenuOpening"
+                     Text="{x:Bind Path=doc.Contents, Mode=TwoWay}">
+                <TextBox.Resources>
+                    <Thickness x:Key="TextControlBorderThemeThicknessFocused">1,1,1,0</Thickness>
+                    <Thickness x:Key="TextControlBorderThemeThickness">1,1,1,0</Thickness>
+                </TextBox.Resources>
+            </TextBox>
             <Grid Grid.Row="3" Name="StatusbarGrid" Height="24" HorizontalAlignment="Stretch" VerticalAlignment="Center">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
