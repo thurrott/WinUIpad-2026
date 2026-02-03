@@ -2,7 +2,6 @@
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.IO;
-using System.Reflection.Metadata;
 using System.Threading.Tasks;
 using Windows.Storage;
 
@@ -48,10 +47,7 @@ namespace WinUIpad
                 d.TextHasChanged = false;
                 d.DocumentIsSaved = true;
             }
-            if (file != null) 
-                d.FileName = file.Path;
-            else
-                d.FileName = "Untitled.txt";
+            // If user cancelled the file picker, document state remains unchanged
         }
 
         public async Task<bool> NeedsToBeSavedAsync(MainWindow mw, Document d)
