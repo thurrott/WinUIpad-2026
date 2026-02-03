@@ -107,7 +107,7 @@ namespace WinUIpad
             appSettings.LoadStatusBarSettings(StatusbarGrid, StatusBarMenu, StatusBarToggle);
         }
 
-        private async void Font_Configuration()
+        private void Font_Configuration()
         {
             appSettings.LoadFontSettings(out fontName, out fontSize, out fontItalic, out fontBold);
 
@@ -188,7 +188,6 @@ namespace WinUIpad
         }
 
         // Helper method to run before the app window closes
-        // TO-Do: Doesn't exit properly if a new document is saved first
         private async Task<bool> BeforeClosing()
         {
             // Returns false if the app should stay open
@@ -199,16 +198,15 @@ namespace WinUIpad
             // NeedsToBeSavedAsync returns:
             //  true: user chose Continue (may have saved)
             //  false: user chose Cancel
-            
+
             if (!await fo.NeedsToBeSavedAsync(this, doc))
             {
-                // User cancelled the exit — return to app and focus the editor.
+                // User cancelled the exit - return to app and focus the editor.
                 TextBox1.Focus(FocusState.Programmatic);
                 return false;
             }
-            
-            // User chose to continue. Save the same settings the OnClosing handler saves
-            // so we don't prompt again when forcing shutdown.
+
+            // User chose to continue. Save settings before closing.
             try
             {
                 // Try to use the cached AppWindow if available
@@ -218,16 +216,9 @@ namespace WinUIpad
                 }
                 else
                 {
-                    // Try to resolve AppWindow from the current Window handle and save window settings if found
+                    // Try to resolve AppWindow from the current Window handle
                     try
                     {
-                        if (appWindow != null)
-                        {
-                            appSettings.SaveWindowSettings(appWindow);
-                        }
-
-
-
                         IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
                         var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
                         var resolvedAppWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
@@ -235,13 +226,10 @@ namespace WinUIpad
                         {
                             appSettings.SaveWindowSettings(resolvedAppWindow);
                         }
-
-
-
                     }
                     catch
                     {
-                        // ignore resolution errors and continue saving other settings
+                        // Ignore resolution errors and continue saving other settings
                     }
                 }
 
@@ -361,8 +349,7 @@ namespace WinUIpad
                 try
                 {
                     // Show system print UI.
-                    var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-                    await Windows.Graphics.Printing.PrintManagerInterop.ShowPrintUIForWindowAsync(hwnd);
+                    await Windows.Graphics.Printing.PrintManagerInterop.ShowPrintUIForWindowAsync(hWnd);
                 }
                 catch
                 {
@@ -370,11 +357,22 @@ namespace WinUIpad
                     ContentDialog noPrintingDialog = new ContentDialog()
                     {
                         Title = "Printing error",
-                        Content = "\nSorry, printing can' t proceed at this time.",
+                        Content = "\nSorry, printing can't proceed at this time.",
                         PrimaryButtonText = "OK"
                     };
+                    noPrintingDialog.XamlRoot = this.Content.XamlRoot;
                     await noPrintingDialog.ShowAsync();
                 }
+                finally
+                {
+                    // Remove handler to prevent accumulation on repeated print attempts
+                    printManager.PrintTaskRequested -= PrintTask_Requested;
+                }
+            }
+            else
+            {
+                // Remove handler if printing isn't supported
+                printManager.PrintTaskRequested -= PrintTask_Requested;
             }
         }
 
@@ -416,7 +414,7 @@ namespace WinUIpad
                 ////  false: user chose Cancel
                 //if (!await fo.NeedsToBeSavedAsync(this, doc))
                 //{
-                //    // User cancelled the exit — return to app and focus the editor.
+                //    // User cancelled the exit ï¿½ return to app and focus the editor.
                 //    TextBox1.Focus(FocusState.Programmatic);
                 //    return;
                 //}
@@ -636,7 +634,12 @@ namespace WinUIpad
             {
                 if (!string.IsNullOrEmpty(findBox.Text))
                 {
-                    TextBox1.Text = TextBox1.Text.Replace(findBox.Text, replaceBox.Text);
+                    // Use case-insensitive replacement to match Find behavior
+                    TextBox1.Text = System.Text.RegularExpressions.Regex.Replace(
+                        TextBox1.Text,
+                        System.Text.RegularExpressions.Regex.Escape(findBox.Text),
+                        replaceBox.Text,
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                 }
             }
         }
@@ -665,14 +668,34 @@ namespace WinUIpad
             var result = await dialog.ShowAsync();
             if (result == ContentDialogResult.Primary && int.TryParse(lineBox.Text, out int lineNumber))
             {
-                var lines = TextBox1.Text.Split('\n');
-                if (lineNumber > 0 && lineNumber <= lines.Length)
+                string text = TextBox1.Text ?? string.Empty;
+
+                // Count lines and find position, handling all line ending styles
+                int currentLine = 1;
+                int position = 0;
+
+                for (int i = 0; i < text.Length && currentLine < lineNumber; i++)
                 {
-                    var position = 0;
-                    for (int i = 0; i < lineNumber - 1; i++)
+                    if (text[i] == '\r')
                     {
-                        position += lines[i].Length + 1; // +1 for the newline character
+                        currentLine++;
+                        // Check for \r\n (Windows-style) and skip the \n
+                        if (i + 1 < text.Length && text[i + 1] == '\n')
+                        {
+                            i++;
+                        }
+                        position = i + 1;
                     }
+                    else if (text[i] == '\n')
+                    {
+                        currentLine++;
+                        position = i + 1;
+                    }
+                }
+
+                // Only navigate if line number is valid (exists in document)
+                if (lineNumber >= 1 && (lineNumber == 1 || currentLine == lineNumber))
+                {
                     TextBox1.SelectionStart = position;
                     TextBox1.SelectionLength = 0;
                     TextBox1.Focus(FocusState.Programmatic);
@@ -682,12 +705,8 @@ namespace WinUIpad
 
         private void SelectAllMenu_Click(object sender, RoutedEventArgs e)
         {
-            TextBox1.DispatcherQueue.TryEnqueue(() => TextBox1.SelectAll());
-
-            this.TextBox1.Loaded += (s, e) =>
-            {
-                this.TextBox1.Focus(FocusState.Programmatic);
-            };
+            TextBox1.SelectAll();
+            TextBox1.Focus(FocusState.Programmatic);
         }
 
         private void TimeDateMenu_Click(object sender, RoutedEventArgs e)
@@ -816,10 +835,7 @@ namespace WinUIpad
                 if (sender is TextBox textBox)
                 {
                     textBox.SelectAll();
-                    this.TextBox1.Loaded += (s, e) =>
-                    {
-                        this.TextBox1.Focus(FocusState.Programmatic);
-                    };
+                    textBox.Focus(FocusState.Programmatic);
                 }
             };
 
@@ -892,7 +908,6 @@ namespace WinUIpad
         }
 
         // Helper method to update the line and column position display in the status bar
-        // TO-DO: This is broken and needs to be fixed
         public void UpdatePosition()
         {
             // Calculate line and column manually since TextBox does not have GetLineIndexFromCharacterIndex
@@ -902,36 +917,39 @@ namespace WinUIpad
 
             int lineNumber = 0;
             int columnNumber = 0;
-            int offset = 0;
-            
-            // Use '\r' as the split delimiter, as WinUI TextBox often uses '\r' for line endings
-            string[] lines = text.Split('\r');
 
-            for (int i = 0; i < lines.Length; i++)
+            // Count lines by iterating through characters up to the caret position
+            // This correctly handles all line ending styles: \r\n (Windows), \n (Unix), \r (old Mac)
+            int currentLineStart = 0;
+            for (int i = 0; i < caretIndex && i < text.Length; i++)
             {
-                string line = lines[i];
-                // Check if the caret is within the current line (including the line ending character for the previous line)
-                if (caretIndex <= offset + line.Length)
+                if (text[i] == '\r')
                 {
-                    lineNumber = i;
-                    columnNumber = caretIndex - offset;
-                    break;
+                    lineNumber++;
+                    // Check for \r\n (Windows-style) and skip the \n
+                    if (i + 1 < text.Length && text[i + 1] == '\n')
+                    {
+                        i++;
+                    }
+                    currentLineStart = i + 1;
                 }
-                offset += line.Length;
-                offset++;
+                else if (text[i] == '\n')
+                {
+                    lineNumber++;
+                    currentLineStart = i + 1;
+                }
             }
+
+            columnNumber = caretIndex - currentLineStart;
 
             PositionText.Text = $"Ln: {lineNumber + 1}, Col: {columnNumber + 1}";
         }
 
         // Helper method to update the word count display in the status bar
-        // TO-DO: This needs to toggle between word and character count
         public void UpdateCount()
         {
-            int Count = System.Text.RegularExpressions.Regex.Matches(TextBox1.Text, @"[\S]+").Count;
-            CountText.Text = Count.ToString() + " word";
-            if (Count == 0 | Count > 1)
-                CountText.Text += "s";
+            int count = System.Text.RegularExpressions.Regex.Matches(TextBox1.Text, @"[\S]+").Count;
+            CountText.Text = count != 1 ? $"{count} words" : "1 word";
         }
 
         //
@@ -952,10 +970,7 @@ namespace WinUIpad
             MainAppGrid.Visibility = Visibility.Visible;
 
             // Focus the text box
-            this.TextBox1.Loaded += (s, e) =>
-            {
-                this.TextBox1.Focus(FocusState.Programmatic);
-            };
+            TextBox1.Focus(FocusState.Programmatic);
         }
 
         private void LightRadioButton_Click(object sender, RoutedEventArgs e)
@@ -1044,6 +1059,8 @@ namespace WinUIpad
         {
             FontExampleTextBlock.FontSize = (double)FontSizeComboBox.SelectedItem;
             TextBox1.FontSize = FontExampleTextBlock.FontSize;
+            Settings.Default.FontSize = TextBox1.FontSize;
+            Settings.Default.Save();
         }
     }
 }
