@@ -1,0 +1,16 @@
+﻿<?xml version='1.0' encoding='utf-8' standalone='yes'?>
+<assembly manifestVersion='1.0'
+    xmlns:asmv3='urn:schemas-microsoft-com:asm.v3'
+    xmlns:winrtv1='urn:schemas-microsoft-com:winrt.v1'
+    xmlns='urn:schemas-microsoft-com:asm.v1'>
+    <asmv3:file name='Microsoft.Windows.Widgets.dll'>
+        <winrtv1:activatableClass name='Microsoft.Windows.Widgets.Providers.WidgetUpdateRequestOptions' threadingModel='both'/>
+        <winrtv1:activatableClass name='Microsoft.Windows.Widgets.Providers.WidgetManager' threadingModel='both'/>
+        <winrtv1:activatableClass name='Microsoft.Windows.Widgets.Providers.WidgetResourceResponse' threadingModel='both'/>
+        <winrtv1:activatableClass name='Microsoft.Windows.Widgets.Notifications.WidgetAnnouncement' threadingModel='both'/>
+        <winrtv1:activatableClass name='Microsoft.Windows.Widgets.Feeds.Providers.FeedManager' threadingModel='both'/>
+        <winrtv1:activatableClass name='Microsoft.Windows.Widgets.Feeds.Providers.CustomQueryParametersUpdateOptions' threadingModel='both'/>
+        <winrtv1:activatableClass name='Microsoft.Windows.Widgets.Feeds.Providers.FeedResourceResponse' threadingModel='both'/>
+        <winrtv1:activatableClass name='Microsoft.Windows.Widgets.Notifications.FeedAnnouncement' threadingModel='both'/>
+    </asmv3:file>
+</assembly>

@@ -1,0 +1,147 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\paul\\OneDrive\\Paul\\Documents\\Work\\Code\\WinUIpad-2026\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{65FC536A-05B8-0BB2-9354-C3352DFF3F93}|WinUIpad.csproj|c:\\users\\paul\\onedrive\\paul\\documents\\work\\code\\winuipad-2026\\documenttab.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{65FC536A-05B8-0BB2-9354-C3352DFF3F93}|WinUIpad.csproj|solutionrelative:documenttab.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{65FC536A-05B8-0BB2-9354-C3352DFF3F93}|WinUIpad.csproj|c:\\users\\paul\\onedrive\\paul\\documents\\work\\code\\winuipad-2026\\services\\fileservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{65FC536A-05B8-0BB2-9354-C3352DFF3F93}|WinUIpad.csproj|solutionrelative:services\\fileservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{65FC536A-05B8-0BB2-9354-C3352DFF3F93}|WinUIpad.csproj|c:\\users\\paul\\onedrive\\paul\\documents\\work\\code\\winuipad-2026\\services\\settingsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{65FC536A-05B8-0BB2-9354-C3352DFF3F93}|WinUIpad.csproj|solutionrelative:services\\settingsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{65FC536A-05B8-0BB2-9354-C3352DFF3F93}|WinUIpad.csproj|c:\\users\\paul\\onedrive\\paul\\documents\\work\\code\\winuipad-2026\\services\\sessionservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{65FC536A-05B8-0BB2-9354-C3352DFF3F93}|WinUIpad.csproj|solutionrelative:services\\sessionservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{65FC536A-05B8-0BB2-9354-C3352DFF3F93}|WinUIpad.csproj|c:\\users\\paul\\onedrive\\paul\\documents\\work\\code\\winuipad-2026\\winuipad.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{65FC536A-05B8-0BB2-9354-C3352DFF3F93}|WinUIpad.csproj|solutionrelative:winuipad.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{65FC536A-05B8-0BB2-9354-C3352DFF3F93}|WinUIpad.csproj|c:\\users\\paul\\onedrive\\paul\\documents\\work\\code\\winuipad-2026\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{65FC536A-05B8-0BB2-9354-C3352DFF3F93}|WinUIpad.csproj|solutionrelative:mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{65FC536A-05B8-0BB2-9354-C3352DFF3F93}|WinUIpad.csproj|c:\\users\\paul\\onedrive\\paul\\documents\\work\\code\\winuipad-2026\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{65FC536A-05B8-0BB2-9354-C3352DFF3F93}|WinUIpad.csproj|solutionrelative:mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 6,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:1:0:{e8b06f52-6d01-11d2-aa7d-00c04f990343}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "SettingsService.cs",
+              "DocumentMoniker": "C:\\Users\\paul\\OneDrive\\Paul\\Documents\\Work\\Code\\WinUIpad-2026\\Services\\SettingsService.cs",
+              "RelativeDocumentMoniker": "Services\\SettingsService.cs",
+              "ToolTip": "C:\\Users\\paul\\OneDrive\\Paul\\Documents\\Work\\Code\\WinUIpad-2026\\Services\\SettingsService.cs",
+              "RelativeToolTip": "Services\\SettingsService.cs",
+              "ViewState": "AgIAABIAAAAAAAAAAAAkwBwAAABpAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-26T17:35:33.58Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "SessionService.cs",
+              "DocumentMoniker": "C:\\Users\\paul\\OneDrive\\Paul\\Documents\\Work\\Code\\WinUIpad-2026\\Services\\SessionService.cs",
+              "RelativeDocumentMoniker": "Services\\SessionService.cs",
+              "ToolTip": "C:\\Users\\paul\\OneDrive\\Paul\\Documents\\Work\\Code\\WinUIpad-2026\\Services\\SessionService.cs",
+              "RelativeToolTip": "Services\\SessionService.cs",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAcwBoAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-26T17:35:23.009Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "FileService.cs",
+              "DocumentMoniker": "C:\\Users\\paul\\OneDrive\\Paul\\Documents\\Work\\Code\\WinUIpad-2026\\Services\\FileService.cs",
+              "RelativeDocumentMoniker": "Services\\FileService.cs",
+              "ToolTip": "C:\\Users\\paul\\OneDrive\\Paul\\Documents\\Work\\Code\\WinUIpad-2026\\Services\\FileService.cs",
+              "RelativeToolTip": "Services\\FileService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAEAAAAQAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-26T17:27:30.217Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "MainWindow.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\paul\\OneDrive\\Paul\\Documents\\Work\\Code\\WinUIpad-2026\\MainWindow.xaml.cs",
+              "RelativeDocumentMoniker": "MainWindow.xaml.cs",
+              "ToolTip": "C:\\Users\\paul\\OneDrive\\Paul\\Documents\\Work\\Code\\WinUIpad-2026\\MainWindow.xaml.cs",
+              "RelativeToolTip": "MainWindow.xaml.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAAXAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-26T17:26:23.349Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "DocumentTab.cs",
+              "DocumentMoniker": "C:\\Users\\paul\\OneDrive\\Paul\\Documents\\Work\\Code\\WinUIpad-2026\\DocumentTab.cs",
+              "RelativeDocumentMoniker": "DocumentTab.cs",
+              "ToolTip": "C:\\Users\\paul\\OneDrive\\Paul\\Documents\\Work\\Code\\WinUIpad-2026\\DocumentTab.cs",
+              "RelativeToolTip": "DocumentTab.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-26T17:25:46.522Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "WinUIpad",
+              "DocumentMoniker": "C:\\Users\\paul\\OneDrive\\Paul\\Documents\\Work\\Code\\WinUIpad-2026\\WinUIpad.csproj",
+              "RelativeDocumentMoniker": "WinUIpad.csproj",
+              "ToolTip": "C:\\Users\\paul\\OneDrive\\Paul\\Documents\\Work\\Code\\WinUIpad-2026\\WinUIpad.csproj",
+              "RelativeToolTip": "WinUIpad.csproj",
+              "ViewState": "AgIAACEAAAAAAAAAAAAAAAUAAAAZAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-03-26T17:25:32.706Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "MainWindow.xaml",
+              "DocumentMoniker": "C:\\Users\\paul\\OneDrive\\Paul\\Documents\\Work\\Code\\WinUIpad-2026\\MainWindow.xaml",
+              "RelativeDocumentMoniker": "MainWindow.xaml",
+              "ToolTip": "C:\\Users\\paul\\OneDrive\\Paul\\Documents\\Work\\Code\\WinUIpad-2026\\MainWindow.xaml",
+              "RelativeToolTip": "MainWindow.xaml",
+              "ViewState": "AgIAADIAAAAAAAAAAAAAAOAAAAAmAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2026-03-26T16:41:13.141Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

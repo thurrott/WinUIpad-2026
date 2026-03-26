@@ -5,12 +5,19 @@
     xmlns:local="using:WinUIpad">
 
     <Style TargetType="TextBox">
-        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="CornerRadius" Value="0" />
         <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
         <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
         <!-- TextControlBackground -->
         <Setter Property="BorderBrush" Value="{ThemeResource ControlFillColorTransparentBrush}" />
         <Setter Property="Opacity" Value="1" />
     </Style>
+
+    <Style TargetType="TabViewItem">
+        
+    </Style>
+
+    <StaticResource x:Key="TabViewBackground" ResourceKey="LayerOnMicaBaseAltFillColorTransparent" />
+    <StaticResource x:Key="TabViewItemHeaderBackgroundSelected" ResourceKey="ControlFillColorTransparentBrush" />
 
 </ResourceDictionary>

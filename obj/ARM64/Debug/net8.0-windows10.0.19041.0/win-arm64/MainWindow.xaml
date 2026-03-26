@@ -1,0 +1,385 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="WinUITabPad.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WinUITabPad"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="WinUITabPad">
+    
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
+
+    <Grid x:ConnectionId='2' Name="OuterGrid" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid x:ConnectionId='3' Name="MainAppGrid" Grid.Row="0" Visibility="Visible" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" >
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid x:ConnectionId='20' Grid.Row="0" Name="TitlebarGrid" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" Margin="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TabView x:ConnectionId='84' Grid.Column="0" Grid.Row="0" x:Name="TabControl" VerticalAlignment="Stretch" TabWidthMode="Equal" CloseButtonOverlayMode="Auto"                                                                                                                                                 >
+                    <TabView.TabStripHeader>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="32" />
+                            </Grid.ColumnDefinitions>
+                            <Image Grid.Column="0" Source="/Assets/t-pride-icon.png" Width="16" Height="16" Margin="7,7,0,0" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
+                    </TabView.TabStripHeader>
+                </TabView>
+            </Grid> <!-- TitleBarGrid -->
+            <Grid x:ConnectionId='21' Grid.Row="1" Name="MenubarGrid" Height="34" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="{ThemeResource LayerOnMicaBaseAltFillColorTertiaryBrush}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <MenuBar Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                    <MenuBarItem Title="File" AccessKey="F">
+                        <MenuFlyoutItem x:ConnectionId='75' Name="NewTabMenu" Text="New tab" AccessKey="N"                         >
+                            <MenuFlyoutItem.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="N" Modifiers="Control"/>
+                            </MenuFlyoutItem.KeyboardAccelerators>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem x:ConnectionId='76' Name="NewWindowMenu" Text="New window" AccessKey="W"                            >
+                            <MenuFlyoutItem.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="N" Modifiers="Control,Shift"/>
+                            </MenuFlyoutItem.KeyboardAccelerators>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem x:ConnectionId='77' Name="OpenMenu" Text="Open..." AccessKey="O"                       >
+                            <MenuFlyoutItem.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="O" Modifiers="Control"/>
+                            </MenuFlyoutItem.KeyboardAccelerators>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem x:ConnectionId='78' Name="SaveMenu" Text="Save" AccessKey="S"                       >
+                            <MenuFlyoutItem.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="S" Modifiers="Control"/>
+                            </MenuFlyoutItem.KeyboardAccelerators>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem x:ConnectionId='79' Name="SaveAsMenu" Text="Save as..." AccessKey="A"                         >
+                            <MenuFlyoutItem.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="S" Modifiers="Control,Shift"/>
+                            </MenuFlyoutItem.KeyboardAccelerators>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutSubItem x:ConnectionId='80' Name="RecentFilesMenu" Text="Recent files" AccessKey="R" />
+                        <MenuFlyoutItem x:ConnectionId='81' Name="ClearRecentMenu" Text="Clear recent files"                               />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem x:ConnectionId='82' Name="CloseTabMenu" Text="Close tab" AccessKey="C"                           >
+                            <MenuFlyoutItem.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="W" Modifiers="Control"/>
+                            </MenuFlyoutItem.KeyboardAccelerators>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem x:ConnectionId='83' Name="ExitMenu" Text="Exit" AccessKey="X"                        />
+                    </MenuBarItem>
+                    <MenuBarItem Title="Edit" AccessKey="E">
+                        <MenuFlyoutItem x:ConnectionId='62' Name="UndoMenu" Text="Undo"                       >
+                            <MenuFlyoutItem.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="Z" Modifiers="Control"/>
+                            </MenuFlyoutItem.KeyboardAccelerators>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem x:ConnectionId='63' Name="CutMenu" Text="Cut"                      >
+                            <MenuFlyoutItem.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="X" Modifiers="Control"/>
+                            </MenuFlyoutItem.KeyboardAccelerators>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem x:ConnectionId='64' Name="CopyMenu" Text="Copy"                       >
+                            <MenuFlyoutItem.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="C" Modifiers="Control"/>
+                            </MenuFlyoutItem.KeyboardAccelerators>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem x:ConnectionId='65' Name="PasteMenu" Text="Paste"                        >
+                            <MenuFlyoutItem.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="V" Modifiers="Control"/>
+                            </MenuFlyoutItem.KeyboardAccelerators>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem x:ConnectionId='66' Name="DeleteMenu" Text="Delete"                         >
+                            <MenuFlyoutItem.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="Delete"/>
+                            </MenuFlyoutItem.KeyboardAccelerators>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem x:ConnectionId='67' Name="FindMenu" Text="Find..."                       >
+                            <MenuFlyoutItem.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="F" Modifiers="Control"/>
+                            </MenuFlyoutItem.KeyboardAccelerators>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem x:ConnectionId='68' Name="FindNextMenu" Text="Find next"                           >
+                            <MenuFlyoutItem.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="F3"/>
+                            </MenuFlyoutItem.KeyboardAccelerators>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem x:ConnectionId='69' Name="FindPrevMenu" Text="Find previous"                           >
+                            <MenuFlyoutItem.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="F3" Modifiers="Shift"/>
+                            </MenuFlyoutItem.KeyboardAccelerators>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem x:ConnectionId='70' Name="ReplaceMenu" Text="Replace..."                          >
+                            <MenuFlyoutItem.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="H" Modifiers="Control"/>
+                            </MenuFlyoutItem.KeyboardAccelerators>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem x:ConnectionId='71' Name="GoToMenu" Text="Go to line..."                       >
+                            <MenuFlyoutItem.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="G" Modifiers="Control"/>
+                            </MenuFlyoutItem.KeyboardAccelerators>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem x:ConnectionId='72' Name="SelectAllMenu" Text="Select all"                            >
+                            <MenuFlyoutItem.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="A" Modifiers="Control"/>
+                            </MenuFlyoutItem.KeyboardAccelerators>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem x:ConnectionId='73' Name="TimeDateMenu" Text="Time/Date"                           >
+                            <MenuFlyoutItem.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="F5"/>
+                            </MenuFlyoutItem.KeyboardAccelerators>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem x:ConnectionId='74' Name="FontMenu" Text="Font..."                        />
+                    </MenuBarItem>
+                    <MenuBarItem Title="View" AccessKey="V">
+                        <MenuFlyoutItem x:ConnectionId='46' Name="ZoomInMenu" Text="Zoom in"                          />
+                        <MenuFlyoutItem x:ConnectionId='47' Name="ZoomOutMenu" Text="Zoom out"                           />
+                        <MenuFlyoutItem x:ConnectionId='48' Name="ZoomResetMenu" Text="Restore default zoom"                             />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutSubItem x:ConnectionId='49' Name="EncodingMenu" Text="Encoding">
+                            <MenuFlyoutItem x:ConnectionId='57' Text="UTF-8"     Tag="UTF-8"                                />
+                            <MenuFlyoutItem x:ConnectionId='58' Text="UTF-8 BOM" Tag="UTF-8-BOM"                            />
+                            <MenuFlyoutItem x:ConnectionId='59' Text="UTF-16 LE" Tag="UTF-16"                               />
+                            <MenuFlyoutItem x:ConnectionId='60' Text="UTF-16 BE" Tag="UTF-16BE"                             />
+                            <MenuFlyoutItem x:ConnectionId='61' Text="ANSI"      Tag="ANSI"                                 />
+                        </MenuFlyoutSubItem>
+                        <MenuFlyoutSubItem x:ConnectionId='50' Name="LineEndingMenu" Text="Line endings">
+                            <MenuFlyoutItem x:ConnectionId='54' Text="Windows (CRLF)" Tag="CRLF"                              />
+                            <MenuFlyoutItem x:ConnectionId='55' Text="Unix (LF)"      Tag="LF"                                />
+                            <MenuFlyoutItem x:ConnectionId='56' Text="Mac (CR)"       Tag="CR"                                />
+                        </MenuFlyoutSubItem>
+                        <MenuFlyoutSeparator />
+                        <ToggleMenuFlyoutItem x:ConnectionId='51' Name="StatusBarMenu" Text="Status bar"                             />
+                        <ToggleMenuFlyoutItem x:ConnectionId='52' Name="WordWrapMenu" Text="Word wrap"                            />
+                        <MenuFlyoutSeparator />
+                        <ToggleMenuFlyoutItem x:ConnectionId='53' Name="SettingsMenu" Text="Settings"                              />
+                    </MenuBarItem>
+                </MenuBar>
+                <Button x:ConnectionId='45' Grid.Column="1" Name="SettingsButton" Height="32" Width="38" Margin="0" HorizontalAlignment="Center" VerticalAlignment="Center" Content="&#xE713;" FontFamily="Segoe Fluent Icons" BorderBrush="Transparent" Background="Transparent"                              />
+            </Grid> <!-- MenuBarGrid -->
+            <Border x:ConnectionId='22' Grid.Row="2" x:Name="FindReplaceBar" Visibility="Collapsed" Padding="8,6" BorderThickness="0,1,0,1" BorderBrush="{ThemeResource ControlElevationBorderBrush}" Background="{ThemeResource LayerFillColorDefaultBrush}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="200" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="200" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Find:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBox x:ConnectionId='33' Grid.Column="1" x:Name="FindBox" PlaceholderText="Search text"                                                             />
+                    <TextBlock x:ConnectionId='34' Grid.Column="2" x:Name="ReplaceLabel" Text="Replace:" VerticalAlignment="Center" Margin="10,0,6,0" Visibility="Collapsed" />
+                    <TextBox x:ConnectionId='35' Grid.Column="3" x:Name="ReplaceBox" PlaceholderText="Replace with" Visibility="Collapsed" />
+                    <StackPanel Grid.Column="4" Orientation="Horizontal" Margin="10,0" Spacing="4">
+                        <ToggleButton x:ConnectionId='42' x:Name="MatchCaseBtn" ToolTipService.ToolTip="Match case" Content="Aa" FontSize="12" Width="40" Height="32" />
+                        <ToggleButton x:ConnectionId='43' x:Name="WholeWordBtn" ToolTipService.ToolTip="Whole word" Content="W" FontSize="12" Width="40" Height="32" />
+                        <ToggleButton x:ConnectionId='44' x:Name="RegexBtn" ToolTipService.ToolTip="Regular expression" Content=".*" FontSize="12" Width="40" Height="32" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="4">
+                        <Button x:ConnectionId='37' Content="&#xE70E;" FontFamily="Segoe Fluent Icons" Width="40" Height="32" ToolTipService.ToolTip="Find previous"                           />
+                        <Button x:ConnectionId='38' Content="&#xE70D;" FontFamily="Segoe Fluent Icons" Width="40" Height="32" ToolTipService.ToolTip="Find next"                           />
+                        <Button x:ConnectionId='39' x:Name="ReplaceBtn" Content="Replace" Visibility="Collapsed" Height="32"                          />
+                        <Button x:ConnectionId='40' x:Name="ReplaceAllBtn" Content="Replace all" Visibility="Collapsed" Height="32"                             />
+                        <TextBlock x:ConnectionId='41' x:Name="FindResultText" VerticalAlignment="Center" Margin="8,0" Style="{StaticResource CaptionTextBlockStyle}" />
+                    </StackPanel>
+                    <Button x:ConnectionId='36' Grid.Column="6" Content="&#xE711;" FontFamily="Segoe Fluent Icons" Width="40" Height="32" Background="Transparent" BorderBrush="Transparent" ToolTipService.ToolTip="Close (Escape)"                            />
+                </Grid>
+            </Border> <!-- FindReplaceBar -->
+            <Grid x:ConnectionId='23' Grid.Row="3" x:Name="TextBoxContainer" Background="Transparent" Margin="-3,0,-3,0" />
+            <Grid x:ConnectionId='24' Grid.Row="4" x:Name="StatusBarGrid" Height="30" BorderThickness="0" Background="Transparent">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:ConnectionId='25' Grid.Column="0" x:Name="PositionText" Text="Ln 1, Col 1" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" Margin="15,0,0,0" />
+                <TextBlock x:ConnectionId='26' Grid.Column="1" x:Name="CountText" Text="0 words" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" Margin="20,0,0,0"                           ToolTipService.ToolTip="Click to toggle word/character count" />
+                <Button x:ConnectionId='27' Grid.Column="3" x:Name="ZoomButton" Background="Transparent" BorderBrush="Transparent" Height="26" Padding="8,0"                          ToolTipService.ToolTip="Click to change zoom">
+                    <TextBlock x:ConnectionId='32' x:Name="ZoomText" Text="100%" Style="{StaticResource CaptionTextBlockStyle}" />
+                </Button>
+                <Button x:ConnectionId='28' Grid.Column="4" x:Name="LineEndingButton" Background="Transparent" BorderBrush="Transparent" Height="26" Padding="8,0"                                ToolTipService.ToolTip="Click to change line endings">
+                    <TextBlock x:ConnectionId='31' x:Name="LineEndingText" Text="Windows (CRLF)" Style="{StaticResource CaptionTextBlockStyle}" />
+                </Button>
+                <Button x:ConnectionId='29' Grid.Column="5" x:Name="EncodingButton" Background="Transparent" BorderBrush="Transparent" Height="26" Padding="8,0" Margin="0,0,5,0"                              ToolTipService.ToolTip="Click to change encoding">
+                    <TextBlock x:ConnectionId='30' x:Name="EncodingText" Text="UTF-8" Style="{StaticResource CaptionTextBlockStyle}" />
+                </Button>
+            </Grid> <!-- StatusBarGrid -->
+        </Grid> <!-- MainAppGrid -->
+        <Grid x:ConnectionId='4' Grid.Row="0" Grid.RowSpan="5" x:Name="SettingsGrid" Visibility="Collapsed" Background="Transparent">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0" Height="48">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Button x:ConnectionId='18' Grid.Column="0" Name="SettingsBackButton" Content="&#xE72B;" FontFamily="Segoe Fluent Icons" Background="Transparent" BorderBrush="Transparent" Width="36" Height="32"                                  />
+                <Image Grid.Column="1" Source="/Assets/t-pride-icon.png" Width="16" Height="16" Margin="0,0,10,0" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="WinUIpad" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
+                <Grid x:ConnectionId='19' x:Name="SettingsDragRegion" Grid.Column="3" Background="Transparent" />
+            </Grid>
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="0" Margin="0,0,0,40">
+                    <TextBlock Text="Settings" Style="{StaticResource TitleLargeTextBlockStyle}" Margin="50,30,50,0" />
+                    <TextBlock Text="Appearance" Style="{StaticResource BodyTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="50,20,50,4" />
+                    <Expander IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="50,5,50,0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                        <Expander.Header>
+                            <Grid Height="72">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <FontIcon Grid.Column="0" Grid.RowSpan="2" Glyph="&#xE790;" Margin="0,0,20,0" />
+                                <TextBlock Grid.Column="1" Grid.Row="0" Text="App theme" Style="{StaticResource BodyTextBlockStyle}" Margin="0,16,0,0" />
+                                <TextBlock Grid.Column="1" Grid.Row="1" Text="Select which app theme to display" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,16" />
+                            </Grid>
+                        </Expander.Header>
+                        <RadioButtons x:ConnectionId='14' x:Name="ThemeRadioButtons" MaxColumns="1" Margin="20,8,20,16">
+                            <RadioButton x:ConnectionId='15' Name="LightRadioButton" Content="Light"                          />
+                            <RadioButton x:ConnectionId='16' Name="DarkRadioButton"  Content="Dark"                           />
+                            <RadioButton x:ConnectionId='17' Name="SystemRadioButton" Content="Use system setting"                          />
+                        </RadioButtons>
+                    </Expander>
+                    <Grid CornerRadius="4" Margin="50,5,50,0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource ControlElevationBorderBrush}" BorderThickness="1" Height="75">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <FontIcon Grid.Column="0" Grid.RowSpan="2" Glyph="&#xE75B;" Margin="16,0,0,0" />
+                        <TextBlock Grid.Column="1" Grid.Row="0" Text="Status bar" Style="{StaticResource BodyTextBlockStyle}" Margin="16,16,0,0" />
+                        <TextBlock Grid.Column="1" Grid.Row="1" Text="Show line, column, zoom, encoding, and line endings" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="16,0,0,16" />
+                        <ToggleSwitch x:ConnectionId='13' Name="StatusBarToggle" Grid.Column="2" Grid.RowSpan="2" Margin="0,0,8,0"                                   />
+                    </Grid>
+                    <TextBlock Text="Text formatting" Style="{StaticResource BodyTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="50,20,50,4" />
+                    <Expander x:ConnectionId='5' x:Name="FontExpander" IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="50,5,50,0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                        <Expander.Header>
+                            <Grid Height="68">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <FontIcon Grid.Column="0" Glyph="&#xE8D2;" Margin="0,0,20,0" />
+                                <TextBlock Grid.Column="1" Text="Font" Style="{StaticResource BodyTextBlockStyle}" VerticalAlignment="Center" />
+                            </Grid>
+                        </Expander.Header>
+                        <StackPanel Margin="20,8,20,16" Spacing="12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="80" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Family" VerticalAlignment="Center" />
+                                <ComboBox x:ConnectionId='12' Grid.Column="1" x:Name="FontFamilyCombo" HorizontalAlignment="Stretch"                                                     />
+                            </Grid>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="80" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Style" VerticalAlignment="Center" />
+                                <ComboBox x:ConnectionId='11' Grid.Column="1" x:Name="FontStyleCombo" HorizontalAlignment="Stretch"                                                   >
+                                    <ComboBoxItem Content="Regular" />
+                                    <ComboBoxItem Content="Italic" />
+                                    <ComboBoxItem Content="Bold" />
+                                    <ComboBoxItem Content="Bold Italic" />
+                                </ComboBox>
+                            </Grid>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="80" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Size" VerticalAlignment="Center" />
+                                <ComboBox x:ConnectionId='10' Grid.Column="1" x:Name="FontSizeCombo" HorizontalAlignment="Stretch"                                                   />
+                            </Grid>
+                            <Border Padding="12,8" CornerRadius="4" Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource ControlElevationBorderBrush}" BorderThickness="1">
+                                <TextBlock x:ConnectionId='9' x:Name="FontPreviewText" Text="The quick brown fox jumps over the lazy dog" TextWrapping="Wrap" />
+                            </Border>
+                        </StackPanel>
+                    </Expander>
+                    <Grid CornerRadius="4" Margin="50,5,50,0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource ControlElevationBorderBrush}" BorderThickness="1" Height="75">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <FontIcon Grid.Column="0" Grid.RowSpan="2" Glyph="&#xE700;" Margin="16,0,0,0" />
+                        <TextBlock Grid.Column="1" Grid.Row="0" Text="Word wrap" Style="{StaticResource BodyTextBlockStyle}" Margin="16,16,0,0" />
+                        <TextBlock Grid.Column="1" Grid.Row="1" Text="Fit text within the window by default" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="16,0,0,16" />
+                        <ToggleSwitch x:ConnectionId='8' Name="WordWrapToggle" Grid.Column="2" Grid.RowSpan="2" Margin="0,0,8,0"                                  />
+                    </Grid>
+                    <TextBlock Text="Spelling" Style="{StaticResource BodyTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="50,20,50,4" />
+                    <Grid CornerRadius="4" Margin="50,5,50,0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource ControlElevationBorderBrush}" BorderThickness="1" Height="75">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xF87B;" Margin="16,12,0,12" />
+                        <TextBlock Grid.Column="1" Text="Spell check" Style="{StaticResource BodyTextBlockStyle}" Margin="16,16,0,16" VerticalAlignment="Center" />
+                        <ToggleSwitch x:ConnectionId='7' Name="SpellCheckToggle" Grid.Column="2" Margin="0,0,8,0"                                    />
+                    </Grid>
+                    <Grid CornerRadius="4" Margin="50,5,50,0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource ControlElevationBorderBrush}" BorderThickness="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <FontIcon Grid.Column="0" Grid.RowSpan="2" Glyph="&#xE8FB;" Margin="16,0,0,0" />
+                        <TextBlock Grid.Column="1" Grid.Row="0" Text="Autocorrect" Style="{StaticResource BodyTextBlockStyle}" Margin="16,16,0,0" />
+                        <TextBlock Grid.Column="1" Grid.Row="1" Text="Typos are corrected automatically when spell check is on" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="16,0,0,16" />
+                        <ToggleSwitch x:ConnectionId='6' Name="AutocorrectToggle" Grid.Column="2" Grid.RowSpan="2" Margin="0,0,8,0"                                     />
+                    </Grid>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid> <!-- SettingsGrid -->
+    </Grid> <!-- OuterGrid -->
+</Window>
+

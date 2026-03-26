@@ -1,56 +1,65 @@
-using Microsoft.Graphics.Canvas.Text;
 using Microsoft.UI.Text;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Windows.Foundation;
-using Microsoft.UI.Xaml.Printing;
-using Windows.Graphics.Printing;
 using Windows.UI.Text;
-using Windows.UI.WindowManagement;
-using Microsoft.UI.Dispatching;
+using WinUIpad.Services;
+using WinUIpad.Helpers;
 
 namespace WinUIpad
 {
     public sealed partial class MainWindow : Window
     {
-        // State
-        public App app = (App)Application.Current;
-        private readonly Microsoft.UI.Windowing.AppWindow? appWindow;
-        public AppSettings appSettings { get; set; }
-        public Document doc = new();
+        //
+        // Per-tab state
+        //
+        private sealed class TabData
+        {
+            public DocumentTab Document { get; } = new();    // Old
+            // public DocumentTab documentTab { get; } = new();   // New
+            public TextBox Editor { get; set; } = null!;
+        }
 
-        // Find and replace
-        private string lastSearchText = string.Empty;
-        private int lastSearchPosition = -1;
+        private readonly Dictionary<TabViewItem, TabData> _tabs = [];
+        private TabViewItem? _activeItem;
+        private TabData? Active => _activeItem is not null && _tabs.TryGetValue(_activeItem, out var d) ? d : null;
+        private TextBox? ActiveEditor => Active?.Editor;
 
-        // Font
-        private string fontName = "";
-        private double fontSize = 0;
-        private bool fontItalic = false, fontBold = false;
+        //
+        // App-level state
+        //
 
-        // Printing
-        PrintDocument? printDocument = null;
-        IPrintDocumentSource? printDocumentSource = null;
-        List<UIElement> printPreviewPages = new List<UIElement>();
+        private readonly SettingsService _settingsService = new();
+        private AppSettings Settings => _settingsService.Settings;
+
+        //
+        // Find/Replace state
+        //
+        private string _lastSearch = string.Empty;
+        private int _lastSearchPos = -1;
+        private bool _replaceMode = false;
+
+        //
+        // Other window-related items
+        //
+        private readonly AppWindow? _appWindow;
+        private bool _showWordCount = true;        // for the status bar; doesn't affect the actual editor word count behavior
 
         public MainWindow()
         {
-            appSettings = new();
+            _settingsService.Load();
 
-            // For window metrics
-            appWindow = this.AppWindow;
-            
-            // Handle the app window Closing event
-            if (appWindow != null)
-            {
-                appWindow.Closing += OnClosing;
-            }
+            _appWindow = this.AppWindow;
+            if (_appWindow is not null)
+                _appWindow.Closing += OnAppWindowClosing;
 
             InitializeComponent();
 
@@ -58,415 +67,104 @@ namespace WinUIpad
             ExtendsContentIntoTitleBar = true;
             SetTitleBar(TitlebarGrid);
 
-            // Set minimum width and height for app window
-            if (this.AppWindow.Presenter is OverlappedPresenter presenter)
+            // Set minimum window sizes
+            if (_appWindow?.Presenter is OverlappedPresenter p)
             {
-                presenter.PreferredMinimumWidth = 1200;
-                presenter.PreferredMinimumHeight = 800;
+                p.PreferredMinimumWidth = 1600;
+                p.PreferredMinimumHeight =1000;
             }
 
-            // Load app settings
-            LoadAppSettings();
+            ApplyWindowSettings();
+            ApplyTheme(Settings.Theme);
+            ApplySettingsUI();
 
-            // Set up document
-            TitlebarGrid.DataContext = doc;
-            doc.ResetDocument(app);
+            // Try to restore previous session; otherwise open one blank tab
+            if (!RestoreSession())
+                CreateTab();
 
-            // Focus the text box when the app window appears
-            this.TextBox1.Loaded += (s, e) =>
-            {
-                this.TextBox1.Focus(FocusState.Programmatic);
-            };
-        }
-
-        public void LoadAppSettings()
-        {
-            var app = (App)Application.Current;
-
-            // Window metrics
-            if (appWindow != null)
-            {
-                appSettings.LoadWindowSettings(appWindow);
-            }
-
-            // Theme
-            ((FrameworkElement)this.Content).RequestedTheme = appSettings.LoadThemeSettings(ThemeRadioButtons) switch
-            {
-                0 => ElementTheme.Light,
-                1 => ElementTheme.Dark,
-                _ => ElementTheme.Default,
-            };
-
-            // Font
-            Font_Configuration();
-
-            // Word wrap
-            appSettings.LoadWordWrapSettings(TextBox1, WordWrapMenu, WordWrapToggle);
-
-            // Status bar
-            appSettings.LoadStatusBarSettings(StatusbarGrid, StatusBarMenu, StatusBarToggle);
-        }
-
-        private void Font_Configuration()
-        {
-            appSettings.LoadFontSettings(out fontName, out fontSize, out fontItalic, out fontBold);
-
-            // Use Microsoft.Graphics.Win2D to get system font families
-            string[] fontFamilies = CanvasTextFormat.GetSystemFontFamilies();
-            Array.Sort(fontFamilies);
-
-            // Font family combo box
-            FontFamilyComboBox.ItemsSource = fontFamilies;
-            for (int x = 0; x <= fontFamilies.Length - 1; x++)
-            {
-                if ((string)FontFamilyComboBox.Items[x] == Settings.Default.FontName)
-                {
-                    FontFamilyComboBox.SelectedItem = FontFamilyComboBox.Items[x];
-                    break;
-                }
-            }
-            FontFamilyComboBox.SelectedItem = Settings.Default.FontName;
-            FontExampleTextBlock.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(fontName);
-
-            // Font style combo box
-            List<string> fontStyle =
-            [
-                "Normal", "Italic", "Bold", "Bold Italic"
-            ];
-            FontStyleComboBox.DataContext = fontStyle;
-
-            if (fontBold && fontItalic)
-            {
-                FontStyleComboBox.SelectedIndex = 3;
-                FontExampleTextBlock.FontStyle = FontStyle.Italic;
-                FontExampleTextBlock.FontWeight = FontWeights.Bold;
-            }
-            else if (fontBold == true && fontItalic == false)
-            {
-                FontStyleComboBox.SelectedIndex = 2;
-                FontExampleTextBlock.FontStyle = FontStyle.Normal;
-                FontExampleTextBlock.FontWeight = FontWeights.Bold;
-            }
-            else if (fontItalic == true && fontBold == false)
-            {
-                FontStyleComboBox.SelectedIndex = 1;
-                FontExampleTextBlock.FontStyle = FontStyle.Italic;
-                FontExampleTextBlock.FontWeight = FontWeights.Normal;
-            }
-            else
-            {
-                FontStyleComboBox.SelectedIndex = 0;
-                FontExampleTextBlock.FontStyle = FontStyle.Normal;
-                FontExampleTextBlock.FontWeight = FontWeights.Normal;
-            }
-
-            // Font size combo box
-            List<double> myFontSize =
-            [
-                8,9,10,11,12,14,16,18,20,22,24,26,28,36,48,72
-            ];
-            FontSizeComboBox.DataContext = myFontSize;
-
-            for (int x = 0; x < myFontSize.Count; x++)
-                if (myFontSize[x] == fontSize)
-                {
-                    FontSizeComboBox.SelectedIndex = x;
-                    break;
-                }
-            FontExampleTextBlock.FontSize = (double)FontSizeComboBox.SelectedItem;
-        }
-
-        private async void OnClosing(object sender, AppWindowClosingEventArgs e)
-        {
-            // Prevent the app window from closing immediately
-            e.Cancel = true;
-
-            if (await BeforeClosing())
-            {
-                Application.Current.Exit();
-            }
-        }
-
-        // Helper method to run before the app window closes
-        private async Task<bool> BeforeClosing()
-        {
-            // Returns false if the app should stay open
-            // Returns true if the app can now close
-
-            FileOperations fo = new FileOperations();
-
-            // NeedsToBeSavedAsync returns:
-            //  true: user chose Continue (may have saved)
-            //  false: user chose Cancel
-
-            if (!await fo.NeedsToBeSavedAsync(this, doc))
-            {
-                // User cancelled the exit - return to app and focus the editor.
-                TextBox1.Focus(FocusState.Programmatic);
-                return false;
-            }
-
-            // User chose to continue. Save settings before closing.
-            try
-            {
-                // Try to use the cached AppWindow if available
-                if (appWindow != null)
-                {
-                    appSettings.SaveWindowSettings(appWindow);
-                }
-                else
-                {
-                    // Try to resolve AppWindow from the current Window handle
-                    try
-                    {
-                        IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-                        var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
-                        var resolvedAppWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
-                        if (resolvedAppWindow != null)
-                        {
-                            appSettings.SaveWindowSettings(resolvedAppWindow);
-                        }
-                    }
-                    catch
-                    {
-                        // Ignore resolution errors and continue saving other settings
-                    }
-                }
-
-                appSettings.SaveThemeSettings(ThemeRadioButtons);
-                appSettings.SaveFontSettings(TextBox1);
-                appSettings.SaveWordWrapSettings(TextBox1.TextWrapping);
-                appSettings.SaveStatusBarSettings(StatusbarGrid.Visibility);
-            }
-            catch
-            {
-                // If saving settings fails, still proceed with exit to avoid leaving the user frustrated.
-            }
-
-            return true;
+            UpdateRecentFilesMenu();
         }
 
         //
         // File menu event handlers
         //
-        private async void FileOpMenu_Click(object sender, RoutedEventArgs e)
-        {
-            // This is for File > New and File > Open
+        private void NewTabMenu_Click(object sender, RoutedEventArgs e) => CreateTab();
 
-            FileOperations fo = new FileOperations();
-            if (await fo.NeedsToBeSavedAsync(this, doc))
+        private void NewWindowMenu_Click(object sender, RoutedEventArgs e) =>
+        new MainWindow().Activate();
+
+        private async void OpenMenu_Click(object sender, RoutedEventArgs e)
+        {
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            var newDoc = new DocumentTab();
+            if (await FileService.OpenPickerAsync(hwnd, newDoc))
             {
-                if (doc != null)
+                // Open in a new tab (or reuse current blank unsaved tab)
+                var useExisting = Active?.Document is { IsSaved: false, IsModified: false };
+                if (useExisting == true && _activeItem is not null)
                 {
-                    string menuText = ((MenuFlyoutItem)sender).Text;
-                    switch (menuText)
+                    var data = Active!;
+                    data.Document.FileName = newDoc.FileName;
+                    data.Document.Contents = newDoc.Contents;
+                    data.Document.Encoding = newDoc.Encoding;
+                    data.Document.LineEnding = newDoc.LineEnding;
+                    data.Document.IsModified = false;
+                    data.Document.IsSaved = true;
+                    data.Editor.Text = newDoc.Contents;
+                    UpdateStatusBar();
+                }
+                else
+                {
+                    var item = CreateTab(filePath: newDoc.FileName);
+                    if (_tabs.TryGetValue(item, out var data))
                     {
-                        case "New":
-                            doc.ResetDocument(app);
-                            UpdatePosition();
-                            break;
-                        case "Open":
-                            fo.OpenFile(this, doc);
-                            UpdatePosition();
-                            break;
-                        default:
-                            break;
+                        data.Document.Contents = newDoc.Contents;
+                        data.Document.Encoding = newDoc.Encoding;
+                        data.Document.LineEnding = newDoc.LineEnding;
+                        data.Document.IsModified = false;
+                        data.Editor.Text = newDoc.Contents;
+                        UpdateStatusBar();
                     }
                 }
+                UpdateRecentFilesMenu();
             }
-        }
-
-        private void NewWindowMenu_Click(object sender, RoutedEventArgs e)
-        {
-            var newWindow = new MainWindow();
-            newWindow.Activate();
         }
 
         private async void SaveMenu_Click(object sender, RoutedEventArgs e)
         {
-            if (doc != null)
-            {
-                if (doc.DocumentIsSaved == false)
-                {
-                    // Save as a new document
-                    SaveAsMenu_Click(sender, e);
-                }
-                else
-                {
-                    // Save existing document
-                    FileOperations fo = new FileOperations();
-                    await fo.SaveDocument(this, doc);
-                }
-            }
-
-            //if (doc != null)
-            //{
-            //    if (doc.DocumentIsSaved)
-            //    {
-            //        // Save existing document
-            //        FileOperations fo = new FileOperations();
-            //        if (await fo.SaveDocument(this, doc) == true)
-            //        {
-            //            app.AppCanBeClosed = true;
-            //        }
-            //    }
-            //    else
-            //    {
-            //        // Save as a new document
-            //        SaveAsMenu_Click(sender, e);
-            //    }
-            //}
+            if (Active is null) return;
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            if (await FileService.SaveAsync(hwnd, Active.Document))
+                UpdateRecentFilesMenu();
         }
 
         private async void SaveAsMenu_Click(object sender, RoutedEventArgs e)
         {
-            if (doc != null)
-            {
-                var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-                await FileOperations.SaveAsDocument(hwnd, doc);
-            }
+            if (Active is null) return;
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            if (await FileService.SaveAsAsync(hwnd, Active.Document))
+                UpdateRecentFilesMenu();
         }
 
         private void PageSetupMenu_Click(object sender, RoutedEventArgs e)
         {
-            // TO-DO
+
         }
 
-        private async void PrintMenu_Click(object sender, RoutedEventArgs e)
+        private void PrintMenu_Click(object sender, RoutedEventArgs e)
         {
-            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-            PrintManager printManager = PrintManagerInterop.GetForWindow(hWnd);
-            printManager.PrintTaskRequested += PrintTask_Requested;
 
-            printDocument = new PrintDocument();
-            printDocumentSource = printDocument.DocumentSource;
-            //printDocument.Paginate += PrintDocument_Paginate;
-            //printDocument.GetPreviewPage += PrintDocument_GetPreviewPage;
-            //printDocument.AddPages += PrintDocument_AddPages;
-
-            if (PrintManager.IsSupported())
-            {
-                try
-                {
-                    // Show system print UI.
-                    await Windows.Graphics.Printing.PrintManagerInterop.ShowPrintUIForWindowAsync(hWnd);
-                }
-                catch
-                {
-                    // Printing cannot proceed at this time.
-                    ContentDialog noPrintingDialog = new ContentDialog()
-                    {
-                        Title = "Printing error",
-                        Content = "\nSorry, printing can't proceed at this time.",
-                        PrimaryButtonText = "OK"
-                    };
-                    noPrintingDialog.XamlRoot = this.Content.XamlRoot;
-                    await noPrintingDialog.ShowAsync();
-                }
-                finally
-                {
-                    // Remove handler to prevent accumulation on repeated print attempts
-                    printManager.PrintTaskRequested -= PrintTask_Requested;
-                }
-            }
-            else
-            {
-                // Remove handler if printing isn't supported
-                printManager.PrintTaskRequested -= PrintTask_Requested;
-            }
         }
 
-        private void PrintTask_Requested(PrintManager sender, PrintTaskRequestedEventArgs args)
+        private async void CloseTabMenu_Click(object sender, RoutedEventArgs e)
         {
-            // Create the PrintTask.
-            // Defines the title and delegate for PrintTaskSourceRequested.
-            PrintTask printTask = args.Request.CreatePrintTask("WinUI 3 Printing example", PrintTaskSourceRequested);
-
-            // Handle PrintTask.Completed to catch failed print jobs.
-            // printTask.Completed += PrintTask_Completed;
-
-            DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
-            {
-                // InvokePrintingButton.IsEnabled = false;
-            });
+            if (_activeItem is not null)
+                await CloseTabAsync(_activeItem);
         }
-
-        private void PrintTaskSourceRequested(PrintTaskSourceRequestedArgs args)
-        {
-            // Set the document source.
-            args.SetSource(printDocumentSource);
-        }
-
 
         private async void ExitMenu_Click(object sender, RoutedEventArgs e)
         {
-            if(await BeforeClosing())
-            {
-                Application.Current.Exit();
-            }
-
-
-            //// Uses the same "needs to be saved" logic the OnClosing handler uses because the Windows App SDK is terrible and GitHub Copilot can't deal with it either
-            //FileOperations fo = new FileOperations();
-
-                //// NeedsToBeSavedAsync returns:
-                ////  true: user chose Continue (may have saved)
-                ////  false: user chose Cancel
-                //if (!await fo.NeedsToBeSavedAsync(this, doc))
-                //{
-                //    // User cancelled the exit � return to app and focus the editor.
-                //    TextBox1.Focus(FocusState.Programmatic);
-                //    return;
-                //}
-
-                //// User chose to continue. Save the same settings the OnClosing handler saves
-                //// so we don't prompt again when forcing shutdown.
-                //try
-                //{
-                //    // Try to use the cached AppWindow if available
-                //    if (appWindow != null)
-                //    {
-                //        appSettings.SaveWindowSettings(appWindow);
-                //    }
-                //    else
-                //    {
-                //        // Try to resolve AppWindow from the current Window handle and save window settings if found
-                //        try
-                //        {
-                //            IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-                //            var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
-                //            var resolvedAppWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
-                //            if (resolvedAppWindow != null)
-                //            {
-                //                appSettings.SaveWindowSettings(resolvedAppWindow);
-                //            }
-                //        }
-                //        catch
-                //        {
-                //            // ignore resolution errors and continue saving other settings
-                //        }
-                //    }
-
-                //    appSettings.SaveThemeSettings(ThemeRadioButtons);
-                //    appSettings.SaveFontSettings(TextBox1);
-                //    appSettings.SaveWordWrapSettings(TextBox1.TextWrapping);
-                //    appSettings.SaveStatusBarSettings(StatusbarGrid.Visibility);
-                //}
-                //catch
-                //{
-                //    // If saving settings fails, still proceed with exit to avoid leaving the user frustrated.
-                //}
-
-                //// Close the window / exit the app.
-                //// Prefer calling Close() to allow normal window teardown; if that doesn't work, fall back to exiting the app.
-                //try
-                //{
-                //    this.Close();
-                //}
-                //catch
-                //{
-                //    Application.Current.Exit();
-                //}
+            await TryExitAsync();
         }
 
         //
@@ -475,592 +173,939 @@ namespace WinUIpad
 
         private void UndoMenu_Click(object sender, RoutedEventArgs e)
         {
-            if (TextBox1.CanUndo) TextBox1.Undo();
+            if (ActiveEditor?.CanUndo == true) ActiveEditor.Undo();
         }
 
-        private void CutMenu_Click(object sender, RoutedEventArgs e)
-        {
-            TextBox1.CutSelectionToClipboard();
-        }
+        private void CutMenu_Click(object sender, RoutedEventArgs e) => ActiveEditor?.CutSelectionToClipboard();
 
-        private void CopyMenu_Click(object sender, RoutedEventArgs e)
-        {
-            TextBox1.CopySelectionToClipboard();
-        }
+        private void CopyMenu_Click(object sender, RoutedEventArgs e) => ActiveEditor?.CopySelectionToClipboard();
 
-        private void PasteMenu_Click(object sender, RoutedEventArgs e)
-        {
-            TextBox1.PasteFromClipboard();
-        }
+        private void PasteMenu_Click(object sender, RoutedEventArgs e) => ActiveEditor?.PasteFromClipboard();
 
         private void DeleteMenu_Click(object sender, RoutedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(TextBox1.SelectedText))
-            {
-                TextBox1.SelectedText = string.Empty;
-            }
+            if (ActiveEditor is { } ed && !string.IsNullOrEmpty(ed.SelectedText))
+                ed.SelectedText = string.Empty;
         }
 
-        private async void SearchMenu_Click(object sender, RoutedEventArgs e)
-        {
-            if (!string.IsNullOrEmpty(TextBox1.SelectedText))
-            {
-                var uri = new Uri($"https://www.bing.com/search?q={Uri.EscapeDataString(TextBox1.SelectedText)}");
-                await Windows.System.Launcher.LaunchUriAsync(uri);
-            }
-        }
-
-        private async void FindMenu_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new ContentDialog
-            {
-                Title = "Find",
-                PrimaryButtonText = "Find Next",
-                CloseButtonText = "Cancel",
-                DefaultButton = ContentDialogButton.Primary,
-                XamlRoot = this.Content.XamlRoot
-            };
-
-            var panel = new StackPanel { Spacing = 10 };
-            var textBox = new TextBox
-            {
-                PlaceholderText = "Find what",
-                Text = lastSearchText
-            };
-            panel.Children.Add(textBox);
-
-            dialog.Content = panel;
-
-            var result = await dialog.ShowAsync();
-            if (result == ContentDialogResult.Primary && !string.IsNullOrEmpty(textBox.Text))
-            {
-                lastSearchText = textBox.Text;
-                FindNext();
-            }
-        }
+        private void FindMenu_Click(object sender, RoutedEventArgs e) => ShowFindBar(replaceMode: false);
 
         private void FindNextMenu_Click(object sender, RoutedEventArgs e)
         {
-            FindNext();
+            if (FindReplaceBar.Visibility == Visibility.Collapsed && !string.IsNullOrEmpty(_lastSearch))
+                FindNext();
+            else
+                ShowFindBar(replaceMode: false);
         }
 
-        private void FindNext()
+        private void FindPrevMenu_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(lastSearchText)) return;
-
-            var text = TextBox1.Text;
-            var startIndex = lastSearchPosition + 1;
-            if (startIndex >= text.Length) startIndex = 0;
-
-            var index = text.IndexOf(lastSearchText, startIndex, StringComparison.CurrentCultureIgnoreCase);
-            if (index == -1 && startIndex > 0)
-            {
-                // Wrap around to the beginning
-                index = text.IndexOf(lastSearchText, 0, StringComparison.CurrentCultureIgnoreCase);
-            }
-
-            if (index != -1)
-            {
-                TextBox1.SelectionStart = index;
-                TextBox1.SelectionLength = lastSearchText.Length;
-                TextBox1.Focus(FocusState.Programmatic);
-                lastSearchPosition = index;
-            }
+            if (!string.IsNullOrEmpty(_lastSearch)) FindPrev();
         }
 
-        private void FindPreviousMenu_Click(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrEmpty(lastSearchText)) return;
-
-            var text = TextBox1.Text;
-            var startIndex = lastSearchPosition - 1;
-            if (startIndex < 0) startIndex = text.Length - 1;
-
-            var index = text.LastIndexOf(lastSearchText, startIndex, StringComparison.CurrentCultureIgnoreCase);
-            if (index == -1 && startIndex < text.Length - 1)
-            {
-                // Wrap around to the end
-                index = text.LastIndexOf(lastSearchText, text.Length - 1, StringComparison.CurrentCultureIgnoreCase);
-            }
-
-            if (index != -1)
-            {
-                TextBox1.SelectionStart = index;
-                TextBox1.SelectionLength = lastSearchText.Length;
-                TextBox1.Focus(FocusState.Programmatic);
-                lastSearchPosition = index;
-            }
-        }
-
-        private async void ReplaceMenu_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new ContentDialog
-            {
-                Title = "Replace",
-                PrimaryButtonText = "Replace",
-                SecondaryButtonText = "Replace All",
-                CloseButtonText = "Cancel",
-                DefaultButton = ContentDialogButton.Primary,
-                XamlRoot = this.Content.XamlRoot
-            };
-
-            var panel = new StackPanel { Spacing = 10 };
-            var findBox = new TextBox
-            {
-                PlaceholderText = "Find what",
-                Text = lastSearchText
-            };
-            var replaceBox = new TextBox { PlaceholderText = "Replace with" };
-            panel.Children.Add(findBox);
-            panel.Children.Add(replaceBox);
-
-            dialog.Content = panel;
-
-            var result = await dialog.ShowAsync();
-            if (result == ContentDialogResult.Primary)
-            {
-                if (!string.IsNullOrEmpty(findBox.Text))
-                {
-                    lastSearchText = findBox.Text;
-                    var selStart = TextBox1.SelectionStart;
-                    FindNext();
-                    if (TextBox1.SelectionLength > 0)
-                    {
-                        TextBox1.SelectedText = replaceBox.Text;
-                    }
-                }
-            }
-            else if (result == ContentDialogResult.Secondary)
-            {
-                if (!string.IsNullOrEmpty(findBox.Text))
-                {
-                    // Use case-insensitive replacement to match Find behavior
-                    TextBox1.Text = System.Text.RegularExpressions.Regex.Replace(
-                        TextBox1.Text,
-                        System.Text.RegularExpressions.Regex.Escape(findBox.Text),
-                        replaceBox.Text,
-                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-                }
-            }
-        }
+        private void ReplaceMenu_Click(object sender, RoutedEventArgs e) => ShowFindBar(replaceMode: true);
 
         private async void GoToMenu_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new ContentDialog
+            if (ActiveEditor is not { } ed) return;
+
+            var dlg = new ContentDialog
             {
-                Title = "Go To Line",
-                PrimaryButtonText = "Go To",
+                Title = "Go to line",
+                PrimaryButtonText = "Go to",
                 CloseButtonText = "Cancel",
                 DefaultButton = ContentDialogButton.Primary,
                 XamlRoot = this.Content.XamlRoot
             };
-
-            var panel = new StackPanel { Spacing = 10 };
             var lineBox = new TextBox
             {
                 PlaceholderText = "Line number",
                 InputScope = new InputScope { Names = { new InputScopeName { NameValue = InputScopeNameValue.Number } } }
             };
-            panel.Children.Add(lineBox);
+            dlg.Content = lineBox;
+            lineBox.Loaded += (_, _) => lineBox.Focus(FocusState.Programmatic);
 
-            dialog.Content = panel;
-
-            var result = await dialog.ShowAsync();
-            if (result == ContentDialogResult.Primary && int.TryParse(lineBox.Text, out int lineNumber))
+            if (await dlg.ShowAsync() == ContentDialogResult.Primary
+                && int.TryParse(lineBox.Text, out int lineNum) && lineNum > 0)
             {
-                string text = TextBox1.Text ?? string.Empty;
-
-                // Count lines and find position, handling all line ending styles
-                int currentLine = 1;
-                int position = 0;
-
-                for (int i = 0; i < text.Length && currentLine < lineNumber; i++)
+                string text = ed.Text;
+                int pos = 0, line = 1;
+                while (pos < text.Length && line < lineNum)
                 {
-                    if (text[i] == '\r')
+                    if (text[pos] == '\r')
                     {
-                        currentLine++;
-                        // Check for \r\n (Windows-style) and skip the \n
-                        if (i + 1 < text.Length && text[i + 1] == '\n')
-                        {
-                            i++;
-                        }
-                        position = i + 1;
+                        line++;
+                        if (pos + 1 < text.Length && text[pos + 1] == '\n') pos++;
                     }
-                    else if (text[i] == '\n')
-                    {
-                        currentLine++;
-                        position = i + 1;
-                    }
+                    else if (text[pos] == '\n') line++;
+                    pos++;
                 }
-
-                // Only navigate if line number is valid (exists in document)
-                if (lineNumber >= 1 && (lineNumber == 1 || currentLine == lineNumber))
+                if (line == lineNum)
                 {
-                    TextBox1.SelectionStart = position;
-                    TextBox1.SelectionLength = 0;
-                    TextBox1.Focus(FocusState.Programmatic);
+                    ed.SelectionStart = pos;
+                    ed.SelectionLength = 0;
+                    ed.Focus(FocusState.Programmatic);
                 }
             }
         }
 
         private void SelectAllMenu_Click(object sender, RoutedEventArgs e)
         {
-            TextBox1.SelectAll();
-            TextBox1.Focus(FocusState.Programmatic);
+            ActiveEditor?.DispatcherQueue.TryEnqueue(() => ActiveEditor.SelectAll());
+            ActiveEditor?.Focus(FocusState.Programmatic);
         }
 
         private void TimeDateMenu_Click(object sender, RoutedEventArgs e)
         {
-            int selectionStart = TextBox1.SelectionStart;
-            string dateTime = DateTime.Now.ToString("h:mm tt M/d/yyyy");
-            TextBox1.Text = TextBox1.Text.Insert(selectionStart, dateTime);
-            TextBox1.SelectionStart = selectionStart + dateTime.Length;
+            if (ActiveEditor is not { } ed) return;
+            int pos = ed.SelectionStart;
+            string stamp = DateTime.Now.ToString("h:mm tt M/d/yyyy");
+            ed.Text = ed.Text.Insert(pos, stamp);
+            ed.SelectionStart = pos + stamp.Length;
         }
 
         private void FontMenu_Click(object sender, RoutedEventArgs e)
         {
-            MainSettingsGrid.Visibility = Visibility.Visible;
-            MainAppGrid.Visibility = Visibility.Collapsed;
             FontExpander.IsExpanded = true;
+            ShowSettings();
         }
 
         //
         // View menu event handlers
         //
-
         private void ZoomInMenu_Click(object sender, RoutedEventArgs e)
         {
-            // TO-DO
+
         }
 
         private void ZoomOutMenu_Click(object sender, RoutedEventArgs e)
         {
-            // TO-DO
+
         }
 
-        private void RestoreDefaultZoomMenu_Click(object sender, RoutedEventArgs e)
+        private void ZoomResetMenu_Click(object sender, RoutedEventArgs e)
         {
-            // TO-DO
+
+        }
+
+        private void EncodingMenu_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void LineEndingMenu_Click(object sender, RoutedEventArgs e)
+        {
+
         }
 
         private void StatusBarMenu_Click(object sender, RoutedEventArgs e)
         {
-            if (StatusbarGrid.Visibility == Visibility.Visible)
-            {
-                StatusbarGrid.Visibility = Visibility.Collapsed;
-                StatusBarToggle.IsOn = false;
-                Settings.Default.StatusBar = false;
-            }
-            else
-            {
-                StatusbarGrid.Visibility = Visibility.Visible;
-                StatusBarToggle.IsOn = true;
-                Settings.Default.StatusBar = true;
-            }
-            Settings.Default.Save();
+            bool show = StatusBarMenu.IsChecked;
+            Settings.ShowStatusBar = show;
+            StatusBarToggle.IsOn = show;
+            StatusBarGrid.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            _settingsService.Save();
         }
 
         private void WordWrapMenu_Click(object sender, RoutedEventArgs e)
         {
-            if (TextBox1.TextWrapping == TextWrapping.Wrap)
-            {
-                TextBox1.TextWrapping = TextWrapping.NoWrap;
-                WordWrapToggle.IsOn = false;
-                Settings.Default.WordWrap = false;
-            }
-            else
-            {
-                TextBox1.TextWrapping = TextWrapping.Wrap;
-                WordWrapToggle.IsOn = true;
-                Settings.Default.WordWrap = true;
-            }
-            Settings.Default.Save();
+            bool wrap = WordWrapMenu.IsChecked;
+            Settings.WordWrap = wrap;
+            WordWrapMenu.IsChecked = wrap;
+            ApplyWordWrapToAllTabs(wrap);
+            _settingsService.Save();
         }
 
-
-        //
-        // Text box event handlers
-        //
-
-        private void TextBox1_TextChanging(Microsoft.UI.Xaml.Controls.TextBox sender, TextBoxTextChangingEventArgs args)
+        private void ApplyWordWrapToAllTabs(bool wrap)
         {
-            doc.TextHasChanged = true;
-            doc.Contents = sender.Text;
-            UpdateCount();
+            foreach (var (_, data) in _tabs)
+                data.Editor.TextWrapping = wrap ? TextWrapping.Wrap : TextWrapping.NoWrap;
         }
 
-        private void TextBox1_SelectionChanged(TextBox sender, TextBoxSelectionChangingEventArgs args)
+        // 
+        // Status bar
+        // 
+
+        private void UpdateStatusBar()
         {
             UpdatePosition();
+            UpdateCount();
+            if (Active is { } a)
+            {
+                LineEndingText.Text = a.Document.LineEndingName;
+                EncodingText.Text = a.Document.EncodingName;
+            }
+            ZoomText.Text = $"{Settings.ZoomLevel:0}%";
         }
 
-        private void TextBox1_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        public void UpdatePosition(int caretIndex = -1)
         {
-            // Override the default menu
-            e.Handled = true;
+            if (ActiveEditor is not { } ed) return;
+            string text = ed.Text ?? string.Empty;
+            if (caretIndex < 0) caretIndex = ed.SelectionStart;
+            caretIndex = Math.Clamp(caretIndex, 0, text.Length);
 
-            // Create a custom menu
-            var menu = new MenuFlyout();
-
-            var cutItem = new MenuFlyoutItem { Text = "Cut" };
-            cutItem.Click += (s, e2) =>
-            {
-                if (sender is TextBox textBox)
-                {
-                    textBox.CutSelectionToClipboard();
-                }
-            };
-
-            var copyItem = new MenuFlyoutItem { Text = "Copy" };
-            copyItem.Click += (s, e2) =>
-            {
-                if (sender is TextBox textBox)
-                {
-                    textBox.CopySelectionToClipboard();
-                }
-            };
-
-            var pasteItem = new MenuFlyoutItem { Text = "Paste" };
-            pasteItem.Click += (s, e2) =>
-            {
-                if (sender is TextBox textBox)
-                {
-                    textBox.PasteFromClipboard();
-                }
-            };
-
-            var selectAllItem = new MenuFlyoutItem { Text = "Select all" };
-            selectAllItem.Click += (s, e2) =>
-            {
-                if (sender is TextBox textBox)
-                {
-                    textBox.SelectAll();
-                    textBox.Focus(FocusState.Programmatic);
-                }
-            };
-
-            var deleteItem = new MenuFlyoutItem { Text = "Delete" };
-            deleteItem.Click += (s, e2) =>
-            {
-                if (sender is TextBox textBox)
-                {
-                    textBox.SelectedText = string.Empty;
-                }
-            };
-
-            var undoItem = new MenuFlyoutItem { Text = "Undo" };
-            undoItem.Click += (s, e2) =>
-            {
-                if (sender is TextBox textBox)
-                {
-                    if (TextBox1.CanUndo) TextBox1.Undo();
-                }
-            };
-
-            var rewriteItem = new MenuFlyoutItem { Text = "Rewrite" };
-            rewriteItem.Click += (s, e2) =>
-            {
-                if (sender is TextBox textBox)
-                {
-                    //
-                }
-            };
-
-            var summarizeItem = new MenuFlyoutItem { Text = "Summarize" };
-            summarizeItem.Click += (s, e2) =>
-            {
-                if (sender is TextBox textBox)
-                {
-                    //
-                }
-            };
-
-            var spellingItem = new ToggleMenuFlyoutItem { Text = "Spelling" };
-            spellingItem.Click += (s, e2) =>
-            {
-                if (sender is TextBox textBox)
-                {
-                    //
-                }
-            };
-
-            menu.Items.Add(cutItem);
-            menu.Items.Add(copyItem);
-            menu.Items.Add(pasteItem);
-            menu.Items.Add(selectAllItem);
-            menu.Items.Add(deleteItem);
-            menu.Items.Add(new MenuFlyoutSeparator());
-            menu.Items.Add(undoItem);
-            menu.Items.Add(new MenuFlyoutSeparator());
-            menu.Items.Add(rewriteItem);
-            menu.Items.Add(summarizeItem);
-            menu.Items.Add(new MenuFlyoutSeparator());
-            menu.Items.Add(spellingItem);
-
-            // Show the menu at the pointer location using CursorLeft and CursorTop from ContextMenuEventArgs
-            // This needs some fine-tuning
-            var windowPos = new Point(e.CursorLeft + 100, e.CursorTop + 100);
-
-            menu.ShowAt((FrameworkElement)sender, new FlyoutShowOptions
-            {
-                Position = windowPos
-            });
-        }
-
-        // Helper method to update the line and column position display in the status bar
-        public void UpdatePosition()
-        {
-            // Calculate line and column manually since TextBox does not have GetLineIndexFromCharacterIndex
-
-            string text = TextBox1.Text ?? string.Empty;
-            int caretIndex = TextBox1.SelectionStart;
-
-            int lineNumber = 0;
-            int columnNumber = 0;
-
-            // Count lines by iterating through characters up to the caret position
-            // This correctly handles all line ending styles: \r\n (Windows), \n (Unix), \r (old Mac)
-            int currentLineStart = 0;
-            for (int i = 0; i < caretIndex && i < text.Length; i++)
+            int lineNum = 0, lineStart = 0;
+            for (int i = 0; i < caretIndex; i++)
             {
                 if (text[i] == '\r')
                 {
-                    lineNumber++;
-                    // Check for \r\n (Windows-style) and skip the \n
-                    if (i + 1 < text.Length && text[i + 1] == '\n')
-                    {
-                        i++;
-                    }
-                    currentLineStart = i + 1;
+                    lineNum++;
+                    if (i + 1 < text.Length && text[i + 1] == '\n') i++;
+                    lineStart = i + 1;
                 }
                 else if (text[i] == '\n')
                 {
-                    lineNumber++;
-                    currentLineStart = i + 1;
+                    lineNum++;
+                    lineStart = i + 1;
+                }
+            }
+            PositionText.Text = $"Ln {lineNum + 1}, Col {caretIndex - lineStart + 1}";
+        }
+
+        public void UpdateCount()
+        {
+            if (ActiveEditor is not { } ed) return;
+            if (_showWordCount)
+            {
+                int n = Regex.Matches(ed.Text, @"\S+").Count;
+                CountText.Text = n == 1 ? "1 word" : $"{n} words";
+            }
+            else
+            {
+                int n = ed.Text.Length;
+                CountText.Text = n == 1 ? "1 character" : $"{n} characters";
+            }
+        }
+        private void CountText_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            _showWordCount = !_showWordCount;
+            UpdateCount();
+        }
+
+        //
+        // Find and replace
+        //
+        private void ShowFindBar(bool replaceMode)
+        {
+            _replaceMode = replaceMode;
+            FindReplaceBar.Visibility = Visibility.Visible;
+            ReplaceLabel.Visibility = replaceMode ? Visibility.Visible : Visibility.Collapsed;
+            ReplaceBox.Visibility = replaceMode ? Visibility.Visible : Visibility.Collapsed;
+            ReplaceBtn.Visibility = replaceMode ? Visibility.Visible : Visibility.Collapsed;
+            ReplaceAllBtn.Visibility = replaceMode ? Visibility.Visible : Visibility.Collapsed;
+
+            if (!string.IsNullOrEmpty(_lastSearch))
+                FindBox.Text = _lastSearch;
+
+            FindBox.Focus(FocusState.Programmatic);
+            FindBox.SelectAll();
+        }
+
+        private void CloseFindBar_Click(object sender, RoutedEventArgs e)
+        {
+            FindReplaceBar.Visibility = Visibility.Collapsed;
+            ActiveEditor?.Focus(FocusState.Programmatic);
+        }
+
+        private void FindBox_TextChanged(object sender, TextChangedEventArgs e) =>
+        FindResultText.Text = string.Empty;
+
+        private void FindBox_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key == Windows.System.VirtualKey.Enter)
+            {
+                _lastSearch = FindBox.Text;
+                FindNext();
+                e.Handled = true;
+            }
+            else if (e.Key == Windows.System.VirtualKey.Escape)
+            {
+                CloseFindBar_Click(sender, new RoutedEventArgs());
+                e.Handled = true;
+            }
+        }
+
+        private void FindNextBtn_Click(object sender, RoutedEventArgs e)
+        {
+            _lastSearch = FindBox.Text;
+            FindNext();
+        }
+
+        private void FindPrevBtn_Click(object sender, RoutedEventArgs e)
+        {
+            _lastSearch = FindBox.Text;
+            FindPrev();
+        }
+
+        private void FindNext()
+        {
+            if (string.IsNullOrEmpty(_lastSearch) || ActiveEditor is not { } ed) return;
+
+            string text = ed.Text;
+            var comparison = MatchCaseBtn.IsChecked == true
+                ? StringComparison.CurrentCulture
+                : StringComparison.CurrentCultureIgnoreCase;
+
+            int start = _lastSearchPos + 1;
+            if (start >= text.Length) start = 0;
+
+            int idx = FindOccurrence(text, _lastSearch, start, forward: true, comparison);
+            if (idx == -1 && start > 0)
+                idx = FindOccurrence(text, _lastSearch, 0, forward: true, comparison);
+
+            if (idx != -1)
+            {
+                ed.SelectionStart = idx;
+                ed.SelectionLength = _lastSearch.Length;
+                ed.Focus(FocusState.Programmatic);
+                _lastSearchPos = idx;
+                FindResultText.Text = string.Empty;
+            }
+            else
+            {
+                FindResultText.Text = "No results";
+            }
+        }
+
+        private void FindPrev()
+        {
+            if (string.IsNullOrEmpty(_lastSearch) || ActiveEditor is not { } ed) return;
+
+            string text = ed.Text;
+            var comparison = MatchCaseBtn.IsChecked == true
+                ? StringComparison.CurrentCulture
+                : StringComparison.CurrentCultureIgnoreCase;
+
+            int start = _lastSearchPos - 1;
+            if (start < 0) start = text.Length - 1;
+
+            int idx = FindOccurrence(text, _lastSearch, start, forward: false, comparison);
+            if (idx == -1 && start < text.Length - 1)
+                idx = FindOccurrence(text, _lastSearch, text.Length - 1, forward: false, comparison);
+
+            if (idx != -1)
+            {
+                ed.SelectionStart = idx;
+                ed.SelectionLength = _lastSearch.Length;
+                ed.Focus(FocusState.Programmatic);
+                _lastSearchPos = idx;
+                FindResultText.Text = string.Empty;
+            }
+            else
+            {
+                FindResultText.Text = "No results";
+            }
+        }
+
+        private static int FindOccurrence(string text, string search, int from, bool forward, StringComparison comparison)
+        {
+            if (RegexOn())
+            {
+                // Regex mode is handled separately; fall through to literal
+            }
+            return forward
+                ? (from < text.Length ? text.IndexOf(search, from, comparison) : -1)
+                : (from >= 0 ? text.LastIndexOf(search, from, comparison) : -1);
+        }
+
+        private static bool RegexOn() => false; // placeholder — wire up to RegexBtn.IsChecked
+
+        private void ReplaceBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (ActiveEditor is not { } ed) return;
+            _lastSearch = FindBox.Text;
+            if (ed.SelectedText.Equals(_lastSearch, StringComparison.CurrentCultureIgnoreCase))
+                ed.SelectedText = ReplaceBox.Text;
+            FindNext();
+        }
+
+        private void ReplaceAllBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (ActiveEditor is not { } ed || string.IsNullOrEmpty(FindBox.Text)) return;
+            var comparison = MatchCaseBtn.IsChecked == true
+                ? StringComparison.CurrentCulture
+                : StringComparison.CurrentCultureIgnoreCase;
+            ed.Text = ReplaceAll(ed.Text, FindBox.Text, ReplaceBox.Text, comparison);
+        }
+
+        private static string ReplaceAll(string text, string find, string replace, StringComparison comp)
+        {
+            int idx;
+            while ((idx = text.IndexOf(find, 0, comp)) >= 0)
+                text = text.Remove(idx, find.Length).Insert(idx, replace);
+            return text;
+        }
+
+        //
+        // Recent files
+        //
+        private void UpdateRecentFilesMenu()
+        {
+            RecentFilesMenu.Items.Clear();
+            var files = RecentFilesManager.GetRecentFiles();
+            if (files.Count == 0)
+            {
+                var empty = new MenuFlyoutItem { Text = "(No recent files)", IsEnabled = false };
+                RecentFilesMenu.Items.Add(empty);
+                return;
+            }
+
+            for (int i = 0; i < files.Count; i++)
+            {
+                string path = files[i];
+                var mi = new MenuFlyoutItem
+                {
+                    Text = $"{i + 1}. {System.IO.Path.GetFileName(path)}",
+                    Tag = path
+                };
+                ToolTipService.SetToolTip(mi, path);
+                mi.Click += RecentFileItem_Click;
+                RecentFilesMenu.Items.Add(mi);
+            }
+        }
+
+        private async void RecentFileItem_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as MenuFlyoutItem)?.Tag is not string path) return;
+            if (!System.IO.File.Exists(path))
+            {
+                await ShowInfoAsync("File not found", $"'{path}' could not be found. It may have been moved or deleted.");
+                UpdateRecentFilesMenu();
+                return;
+            }
+
+            var item = CreateTab(filePath: path);
+            await LoadIntoTabAsync(item, path);
+            UpdateRecentFilesMenu();
+        }
+
+        private async Task ShowInfoAsync(string title, string message)
+        {
+            var dlg = new ContentDialog
+            {
+                Title = title,
+                Content = message,
+                CloseButtonText = "OK",
+                XamlRoot = this.Content.XamlRoot
+            };
+            await dlg.ShowAsync();
+        }
+
+        private async void ClearRecentMenu_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new ContentDialog
+            {
+                Title = "Clear recent files",
+                Content = "Are you sure you want to clear the recent files list?",
+                PrimaryButtonText = "Clear",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Close,
+                XamlRoot = this.Content.XamlRoot
+            };
+            if (await dlg.ShowAsync() == ContentDialogResult.Primary)
+            {
+                RecentFilesManager.ClearRecentFiles();
+                UpdateRecentFilesMenu();
+            }
+        }
+
+        //
+        // Session save/restore
+        //
+        private void SaveSession()
+        {
+            var session = new SessionData
+            {
+                ActiveTabIndex = TabControl.SelectedIndex
+            };
+
+            foreach (var (_, data) in _tabs)
+            {
+                session.Tabs.Add(new SessionEntry
+                {
+                    IsNew = !data.Document.IsSaved,
+                    FilePath = data.Document.FileName,
+                    UnsavedContent = data.Document.IsModified ? data.Document.Contents : string.Empty
+                });
+            }
+
+            SessionService.Save(session);
+        }
+
+        private bool RestoreSession()
+        {
+            var session = SessionService.Load();
+            if (session is null || session.Tabs.Count == 0) return false;
+
+            foreach (var entry in session.Tabs)
+            {
+                if (entry.IsNew)
+                    CreateTab(initialContent: entry.UnsavedContent);
+                else
+                    CreateTab(filePath: entry.FilePath);
+            }
+
+            // Restore the active tab index (clamp to valid range)
+            int idx = Math.Clamp(session.ActiveTabIndex, 0, TabControl.TabItems.Count - 1);
+            if (TabControl.TabItems.Count > 0)
+                TabControl.SelectedIndex = idx;
+
+            // Now load file content for saved tabs
+            foreach (var (item, data) in _tabs)
+            {
+                if (data.Document.IsSaved && !string.IsNullOrEmpty(data.Document.FileName))
+                {
+                    _ = LoadIntoTabAsync(item, data.Document.FileName);
                 }
             }
 
-            columnNumber = caretIndex - currentLineStart;
-
-            PositionText.Text = $"Ln: {lineNumber + 1}, Col: {columnNumber + 1}";
+            return true;
         }
 
-        // Helper method to update the word count display in the status bar
-        public void UpdateCount()
+        private async Task LoadIntoTabAsync(TabViewItem item, string path)
         {
-            int count = System.Text.RegularExpressions.Regex.Matches(TextBox1.Text, @"[\S]+").Count;
-            CountText.Text = count != 1 ? $"{count} words" : "1 word";
+            if (!_tabs.TryGetValue(item, out var data)) return;
+            await FileService.OpenFromPathAsync(path, data.Document);
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                data.Editor.Text = data.Document.Contents;
+                if (item == _activeItem) UpdateStatusBar();
+            });
         }
 
         //
-        // Settings event handlers
+        // Tab management
         //
 
-        private async void SettingsButton_Click(object sender, RoutedEventArgs e)
+        private void TabControl_AddTabButtonClick(TabView sender, object args) => CreateTab();
+
+        private async void TabControl_TabCloseRequested(TabView sender, TabViewTabCloseRequestedEventArgs args)
         {
-            FontExpander.IsExpanded = false;
+            if (args.Tab is TabViewItem item)
+                await CloseTabAsync(item);
+        }
+
+        private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (TabControl.SelectedItem is TabViewItem item)
+                ActivateTab(item);
+        }
+
+        private TabViewItem CreateTab(string? filePath = null, string? initialContent = null)
+        {
+            var data = new TabData();
+            if (filePath is not null)
+            {
+                data.Document.FileName = filePath;
+                data.Document.IsSaved = true;
+            }
+            if (initialContent is not null)
+            {
+                data.Document.Contents = initialContent;
+                data.Document.IsModified = initialContent.Length > 0;
+            }
+
+            data.Editor = BuildEditor(data);
+
+            var item = new TabViewItem
+            {
+                Header = data.Document.DisplayName,
+                Content = null,   // content shown separately in TextBoxContainer
+                Tag = data
+            };
+
+            data.Document.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is nameof(DocumentTab.DisplayName))
+                    DispatcherQueue.TryEnqueue(() => item.Header = data.Document.DisplayName);
+            };
+
+            _tabs[item] = data;
+            TabControl.TabItems.Add(item);
+            TabControl.SelectedItem = item;
+            return item;
+        }
+
+        private TextBox BuildEditor(TabData data)
+        {
+            var editor = new TextBox
+            {
+                AcceptsReturn = true,
+                TextWrapping = Settings.WordWrap ? TextWrapping.Wrap : TextWrapping.NoWrap,
+                FontFamily = new FontFamily(Settings.FontFamily),
+                FontSize = Settings.FontSize,
+                FontWeight = Settings.FontBold ? FontWeights.Bold : FontWeights.Normal,
+                FontStyle = Settings.FontItalic ? FontStyle.Italic : FontStyle.Normal,
+                IsSpellCheckEnabled = Settings.SpellCheck,
+                IsTextPredictionEnabled = Settings.Autocorrect && Settings.SpellCheck,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                Margin = new Thickness(-3, 0, -3, 0),
+                Text = data.Document.Contents
+            };
+            editor.Resources["TextControlBorderThemeThicknessFocused"] = new Thickness(1, 1, 1, 0);
+            editor.Resources["TextControlBorderThemeThickness"] = new Thickness(1, 1, 1, 0);
+
+            editor.TextChanging += Editor_TextChanging;
+            editor.SelectionChanging += Editor_SelectionChanging;
+            editor.ContextMenuOpening += Editor_ContextMenuOpening;
+
+            return editor;
+        }
+
+        private void Editor_TextChanging(TextBox sender, TextBoxTextChangingEventArgs args)
+        {
+            // Find the document for this editor
+            foreach (var (_, data) in _tabs)
+            {
+                if (!ReferenceEquals(data.Editor, sender)) continue;
+                data.Document.Contents = sender.Text;
+                data.Document.IsModified = true;
+                break;
+            }
+
+            if (ReferenceEquals(sender, ActiveEditor))
+            {
+                UpdateCount();
+                DispatcherQueue.TryEnqueue(() => UpdatePosition());
+            }
+        }
+
+        private void Editor_SelectionChanging(TextBox sender, TextBoxSelectionChangingEventArgs args)
+        {
+            if (ReferenceEquals(sender, ActiveEditor))
+                UpdatePosition(args.SelectionStart);
+        }
+
+        private void Editor_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            e.Handled = true;
+            if (sender is not TextBox ed) return;
+
+            var menu = new MenuFlyout();
+
+            void Add(string text, Action action, bool enabled = true)
+            {
+                var item = new MenuFlyoutItem { Text = text, IsEnabled = enabled };
+                item.Click += (_, _) => action();
+                menu.Items.Add(item);
+            }
+
+            bool hasSelection = !string.IsNullOrEmpty(ed.SelectedText);
+            Add("Undo", () => { if (ed.CanUndo) ed.Undo(); }, ed.CanUndo);
+            menu.Items.Add(new MenuFlyoutSeparator());
+            Add("Cut", () => ed.CutSelectionToClipboard(), hasSelection);
+            Add("Copy", () => ed.CopySelectionToClipboard(), hasSelection);
+            Add("Paste", () => ed.PasteFromClipboard());
+            Add("Delete", () => { if (hasSelection) ed.SelectedText = string.Empty; }, hasSelection);
+            menu.Items.Add(new MenuFlyoutSeparator());
+            Add("Select all", () => { ed.SelectAll(); ed.Focus(FocusState.Programmatic); });
+
+            menu.ShowAt(ed, new FlyoutShowOptions
+            {
+                Position = new Point(e.CursorLeft, e.CursorTop)
+            });
+        }
+
+        private void ActivateTab(TabViewItem item)
+        {
+            TextBoxContainer.Children.Clear();
+            _activeItem = item;
+
+            if (_tabs.TryGetValue(item, out var data))
+            {
+                TextBoxContainer.Children.Add(data.Editor);
+                data.Editor.Focus(FocusState.Programmatic);
+                UpdateStatusBar();
+            }
+        }
+
+        private async Task<bool> CloseTabAsync(TabViewItem item)
+        {
+            if (!_tabs.TryGetValue(item, out var data)) return true;
+
+            if (data.Document.IsModified)
+            {
+                var dlg = new ContentDialog
+                {
+                    Title = "Save changes?",
+                    Content = $"Do you want to save changes to {data.Document.ShortName}?",
+                    PrimaryButtonText = "Save",
+                    SecondaryButtonText = "Don't save",
+                    CloseButtonText = "Cancel",
+                    DefaultButton = ContentDialogButton.Primary,
+                    XamlRoot = this.Content.XamlRoot
+                };
+                var result = await dlg.ShowAsync();
+                if (result == ContentDialogResult.None) return false;       // Cancel
+                if (result == ContentDialogResult.Primary)
+                {
+                    var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+                    if (!await FileService.SaveAsync(hwnd, data.Document)) return false;
+                }
+            }
+
+            TabControl.TabItems.Remove(item);
+            TextBoxContainer.Children.Remove(data.Editor);
+            _tabs.Remove(item);
+
+            if (item == _activeItem)
+                _activeItem = null;
+
+            // If last tab closed, open a blank one
+            if (TabControl.TabItems.Count == 0)
+                CreateTab();
+
+            return true;
+        }
+
+        private void EncodingButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void LineEndingButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void ZoomButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        //
+        // Settings
+        //
+        private void SettingsButton_Click(object sender, RoutedEventArgs e) => ShowSettings();
+
+        private void ShowSettings()
+        {
             MainAppGrid.Visibility = Visibility.Collapsed;
-            MainSettingsGrid.Visibility = Visibility.Visible;
+            SettingsGrid.Visibility = Visibility.Visible;
+            SetTitleBar(SettingsDragRegion);
         }
 
-        private void BackButton_Click(object sender, RoutedEventArgs e)
+        private void ApplySettingsUI()
         {
-            FontExpander.IsExpanded = false;
-            MainSettingsGrid.Visibility = Visibility.Collapsed;
+            if (ThemeRadioButtons != null)
+            {
+                SystemRadioButton.IsChecked = true; // default
+                if (Settings.Theme == 0) LightRadioButton.IsChecked = true;
+                else if (Settings.Theme == 1) DarkRadioButton.IsChecked = true;
+                else SystemRadioButton.IsChecked = true;
+            }
+
+            StatusBarMenu.IsChecked = Settings.ShowStatusBar;
+            StatusBarToggle.IsOn = Settings.ShowStatusBar;
+            StatusBarGrid.Visibility = Settings.ShowStatusBar ? Visibility.Visible : Visibility.Collapsed;
+
+            WordWrapMenu.IsChecked = Settings.WordWrap;
+            WordWrapToggle.IsOn = Settings.WordWrap;
+
+            SpellCheckToggle.IsOn = Settings.SpellCheck;
+            AutocorrectToggle.IsOn = Settings.Autocorrect;
+            AutocorrectToggle.IsEnabled = Settings.SpellCheck;
+
+            ZoomText.Text = $"{Settings.ZoomLevel:0}%";
+
+            // Font combos
+            var fonts = new List<string>
+        {
+            "Arial","Calibri","Cascadia Code","Cascadia Mono","Comic Sans MS","Consolas",
+            "Courier New","Georgia","Lucida Console","Segoe UI","Times New Roman","Trebuchet MS",
+            "Verdana"
+        };
+            FontFamilyCombo.ItemsSource = fonts;
+            FontFamilyCombo.SelectedItem = fonts.Contains(Settings.FontFamily) ? Settings.FontFamily : fonts[0];
+
+            FontStyleCombo.SelectedIndex = (Settings.FontBold, Settings.FontItalic) switch
+            {
+                (true, true) => 3,
+                (true, false) => 2,
+                (false, true) => 1,
+                _ => 0
+            };
+
+            var sizes = new List<double> { 8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72 };
+            FontSizeCombo.ItemsSource = sizes;
+            FontSizeCombo.SelectedItem = sizes.Contains(Settings.FontSize) ? Settings.FontSize : (object)14.0;
+
+            UpdateFontPreview();
+        }
+
+        private void SettingsBackButton_Click(object sender, RoutedEventArgs e)
+        {
+            SettingsGrid.Visibility = Visibility.Collapsed;
             MainAppGrid.Visibility = Visibility.Visible;
-
-            // Focus the text box
-            TextBox1.Focus(FocusState.Programmatic);
+            SetTitleBar(TabControl);
+            ActiveEditor?.Focus(FocusState.Programmatic);
         }
 
-        private void LightRadioButton_Click(object sender, RoutedEventArgs e)
+        private void ApplyTheme(int theme)
         {
-            ((FrameworkElement)this.Content).RequestedTheme = ElementTheme.Light;
+            if (this.Content is FrameworkElement root)
+                root.RequestedTheme = theme switch
+                {
+                    0 => ElementTheme.Light,
+                    1 => ElementTheme.Dark,
+                    _ => ElementTheme.Default
+                };
         }
 
-        private void DarkRadioButton_Click(object sender, RoutedEventArgs e)
+        private void ThemeRadio_Click(object sender, RoutedEventArgs e)
         {
-            ((FrameworkElement)this.Content).RequestedTheme = ElementTheme.Dark;
+            int theme = ReferenceEquals(sender, LightRadioButton) ? 0 : ReferenceEquals(sender, DarkRadioButton) ? 1 : 2;
+            Settings.Theme = theme;
+            ApplyTheme(theme);
+            _settingsService.Save();
         }
 
-        private void SystemRadioButton_Click(object sender, RoutedEventArgs e)
+        private void FontStyleCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            ((FrameworkElement)this.Content).RequestedTheme = ElementTheme.Default;
+            int idx = FontStyleCombo.SelectedIndex;
+            Settings.FontBold = idx == 2 || idx == 3;
+            Settings.FontItalic = idx == 1 || idx == 3;
+            ApplyFontToAllTabs();
+            UpdateFontPreview();
+            _settingsService.Save();
+        }
+
+        private void FontFamilyCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (FontFamilyCombo.SelectedItem is string family)
+            {
+                Settings.FontFamily = family;
+                ApplyFontToAllTabs();
+                UpdateFontPreview();
+                _settingsService.Save();
+            }
+        }
+
+        private void FontSizeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (FontSizeCombo.SelectedItem is double size)
+            {
+                Settings.FontSize = size;
+                // ApplyZoom(); // re-applies font size with current zoom
+                UpdateFontPreview();
+                _settingsService.Save();
+            }
+        }
+
+        private void UpdateFontPreview()
+        {
+            FontPreviewText.FontFamily = new FontFamily(Settings.FontFamily);
+            FontPreviewText.FontSize = Settings.FontSize;
+            FontPreviewText.FontWeight = Settings.FontBold ? FontWeights.Bold : FontWeights.Normal;
+            FontPreviewText.FontStyle = Settings.FontItalic ? FontStyle.Italic : FontStyle.Normal;
+        }
+
+        private void ApplyFontToAllTabs()
+        {
+            double scale = Settings.ZoomLevel / 100.0;
+            var family = new FontFamily(Settings.FontFamily);
+            var weight = Settings.FontBold ? FontWeights.Bold : FontWeights.Normal;
+            var style = Settings.FontItalic ? FontStyle.Italic : FontStyle.Normal;
+            foreach (var (_, data) in _tabs)
+            {
+                data.Editor.FontFamily = family;
+                data.Editor.FontWeight = weight;
+                data.Editor.FontStyle = style;
+                data.Editor.FontSize = Settings.FontSize * scale;
+            }
         }
 
         private void StatusBarToggle_Toggled(object sender, RoutedEventArgs e)
         {
-            var isVisible = StatusBarToggle.IsOn;
-            StatusBarMenu.IsChecked = isVisible;
-            StatusbarGrid.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
-            Settings.Default.StatusBar = isVisible;
-            Settings.Default.Save();
+            bool show = StatusBarToggle.IsOn;
+            Settings.ShowStatusBar = show;
+            StatusBarMenu.IsChecked = show;
+            StatusBarGrid.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            _settingsService.Save();
         }
 
         private void WordWrapToggle_Toggled(object sender, RoutedEventArgs e)
         {
-            var isEnabled = WordWrapToggle.IsOn;
-            WordWrapMenu.IsChecked = isEnabled;
-            TextBox1.TextWrapping = isEnabled ? TextWrapping.Wrap : TextWrapping.NoWrap;
-            Settings.Default.WordWrap = isEnabled;
-            Settings.Default.Save();
+            bool wrap = WordWrapToggle.IsOn;
+            Settings.WordWrap = wrap;
+            WordWrapMenu.IsChecked = wrap;
+            ApplyWordWrapToAllTabs(wrap);
+            _settingsService.Save();
         }
 
-        private void FontFamilyComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void SpellCheckToggle_Toggled(object sender, RoutedEventArgs e)
         {
-            FontExampleTextBlock.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily((string)FontFamilyComboBox.SelectedItem);
-            TextBox1.FontFamily = FontExampleTextBlock.FontFamily;
-            Settings.Default.FontName = TextBox1.FontFamily.Source.ToString();
-            Settings.Default.Save();
+            bool on = SpellCheckToggle.IsOn;
+            Settings.SpellCheck = on;
+            AutocorrectToggle.IsEnabled = on;
+            if (!on) { AutocorrectToggle.IsOn = false; Settings.Autocorrect = false; }
+            foreach (var (_, data) in _tabs)
+            {
+                data.Editor.IsSpellCheckEnabled = on;
+                data.Editor.IsTextPredictionEnabled = on && Settings.Autocorrect;
+            }
+            _settingsService.Save();
         }
 
-        private void FontStyleComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void AutocorrectToggle_Toggled(object sender, RoutedEventArgs e)
         {
-            // fontBold && fontItalic
-            if (FontStyleComboBox.SelectedIndex == 3)
-            {
-                FontExampleTextBlock.FontStyle = FontStyle.Italic;
-                FontExampleTextBlock.FontWeight = FontWeights.Bold;
-            }
-            // fontBold == true && fontItalic == false
-            else if (FontStyleComboBox.SelectedIndex == 2)
-            {
-                FontExampleTextBlock.FontStyle = FontStyle.Normal;
-                FontExampleTextBlock.FontWeight = FontWeights.Bold;
-            }
-            // fontItalic == true && fontBold == false
-            else if (FontStyleComboBox.SelectedIndex == 1)
-            {
-                FontExampleTextBlock.FontStyle = FontStyle.Italic;
-                FontExampleTextBlock.FontWeight = FontWeights.Normal;
-            }
-            // normal / 0
-            else
-            {
-                FontExampleTextBlock.FontStyle = FontStyle.Normal;
-                FontExampleTextBlock.FontWeight = FontWeights.Normal;
-            }
-
-            TextBox1.FontStyle = FontExampleTextBlock.FontStyle;
-            TextBox1.FontWeight = FontExampleTextBlock.FontWeight;
-
-            if(TextBox1.FontStyle == FontStyle.Italic)
-                Settings.Default.FontItalic = true;
-            else Settings.Default.FontItalic = false;
-
-            if(TextBox1.FontWeight == FontWeights.Bold)
-                Settings.Default.FontBold = true;
-            else Settings.Default.FontBold = false;
-
-            Settings.Default.Save();
+            bool on = AutocorrectToggle.IsOn;
+            Settings.Autocorrect = on;
+            foreach (var (_, data) in _tabs)
+                data.Editor.IsTextPredictionEnabled = on && Settings.SpellCheck;
+            _settingsService.Save();
         }
 
-        private void FontSizeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        // 
+        // Window close
+        // 
+        private async void OnAppWindowClosing(AppWindow sender, AppWindowClosingEventArgs e)
         {
-            FontExampleTextBlock.FontSize = (double)FontSizeComboBox.SelectedItem;
-            TextBox1.FontSize = FontExampleTextBlock.FontSize;
-            Settings.Default.FontSize = TextBox1.FontSize;
-            Settings.Default.Save();
+            e.Cancel = true;
+            await TryExitAsync();
+        }
+
+        private async Task TryExitAsync()
+        {
+            // Try to close every tab in order; stop if user cancels
+            foreach (var item in new List<TabViewItem>([.. _tabs.Keys]))
+            {
+                if (!await CloseTabAsync(item)) return;
+            }
+            SaveSession();
+            SaveWindowSettings();
+            Application.Current.Exit();
+        }
+
+        // 
+        // App window settings
+        // 
+
+        private void ApplyWindowSettings()
+        {
+            if (_appWindow is null) return;
+            if (Settings.WindowLeft >= 0 && Settings.WindowTop >= 0)
+                _appWindow.Move(new Windows.Graphics.PointInt32(Settings.WindowLeft, Settings.WindowTop));
+            _appWindow.Resize(new Windows.Graphics.SizeInt32(Settings.WindowWidth, Settings.WindowHeight));
+            if (Settings.WindowMaximized && _appWindow.Presenter is OverlappedPresenter op)
+                op.Maximize();
+        }
+
+        private void SaveWindowSettings()
+        {
+            if (_appWindow is null) return;
+            bool max = _appWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Maximized };
+            Settings.WindowMaximized = max;
+            if (!max)
+            {
+                Settings.WindowLeft = _appWindow.Position.X;
+                Settings.WindowTop = _appWindow.Position.Y;
+                Settings.WindowWidth = _appWindow.Size.Width;
+                Settings.WindowHeight = _appWindow.Size.Height;
+            }
+            _settingsService.Save();
         }
     }
 }
